@@ -458,10 +458,15 @@ export default function ManagerHome({ navigation }) {
       </Modal>
 
       <Modal visible={showRateInput} transparent animationType="fade" onRequestClose={() => setShowRateInput(false)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 20}
+        >
+          <TouchableOpacity style={styles.modalBackdrop} onPress={() => setShowRateInput(false)} />
           <View style={styles.alertBox}>
             <Text style={styles.alertTitle}>Change Rate for {selectedWorker?.name}</Text>
-            <TextInput style={styles.input} placeholder="New Rate" keyboardType="numeric" value={newRate} onChangeText={setNewRate} />
+            <TextInput style={styles.input} placeholder="New Rate" keyboardType="numeric" value={newRate} onChangeText={setNewRate} autoFocus />
             <View style={styles.rateChoiceRow}>
               <TouchableOpacity style={[styles.rateChoiceBtn, rateApplyFrom === 'this-month' && styles.rateChoiceBtnActive]} onPress={() => setRateApplyFrom('this-month')}>
                 <Text style={[styles.rateChoiceText, rateApplyFrom === 'this-month' && styles.rateChoiceTextActive]}>Apply This Month</Text>
@@ -479,7 +484,7 @@ export default function ManagerHome({ navigation }) {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </KeyboardAvoidingView>
   );
@@ -551,6 +556,7 @@ const styles = StyleSheet.create({
   addFirstBtn: { backgroundColor: COLORS.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10 },
   addFirstBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  modalBackdrop: { ...StyleSheet.absoluteFillObject },
   bottomSheet: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 30 },
   sheetHandle: { width: 40, height: 4, backgroundColor: COLORS.border, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 8 },
   sheetTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textPrimary, paddingHorizontal: 20, marginBottom: 2 },

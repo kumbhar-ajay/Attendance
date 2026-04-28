@@ -1,6 +1,6 @@
 // FILE: mobile/src/screens/AdminHome.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, TextInput, Alert, Platform, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, TextInput, Alert, Platform, ScrollView, RefreshControl, KeyboardAvoidingView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
@@ -283,10 +283,15 @@ export default function AdminHome({ navigation }) {
       </Modal>
 
       <Modal visible={showRateInput} transparent animationType="fade" onRequestClose={() => setShowRateInput(false)}>
-        <View style={styles.overlay}>
+        <KeyboardAvoidingView
+          style={styles.overlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 20}
+        >
+          <TouchableOpacity style={styles.modalBackdrop} onPress={() => setShowRateInput(false)} />
           <View style={styles.alertBox}>
             <Text style={styles.sheetTitle}>Change Rate for {selectedMgr?.name}</Text>
-            <TextInput style={styles.input} placeholder="New Rate" keyboardType="numeric" value={newRate} onChangeText={setNewRate} />
+            <TextInput style={styles.input} placeholder="New Rate" keyboardType="numeric" value={newRate} onChangeText={setNewRate} autoFocus />
             <View style={styles.rateChoiceRow}>
               <TouchableOpacity style={[styles.rateChoiceBtn, rateApplyFrom === 'this-month' && styles.rateChoiceBtnActive]} onPress={() => setRateApplyFrom('this-month')}>
                 <Text style={[styles.rateChoiceText, rateApplyFrom === 'this-month' && styles.rateChoiceTextActive]}>Apply This Month</Text>
@@ -304,7 +309,7 @@ export default function AdminHome({ navigation }) {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -341,6 +346,7 @@ const styles = StyleSheet.create({
   cell: { width: 90, paddingHorizontal: 8, paddingVertical: 10, fontSize: 12, color: COLORS.textPrimary, borderRightWidth: 0.5, borderRightColor: COLORS.border },
   headCell: { fontWeight: '700', color: COLORS.textSecondary, fontSize: 11 },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
+  modalBackdrop: { ...StyleSheet.absoluteFillObject },
   sheet: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, paddingBottom: 36 },
   sheetTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 16 },
   formLabel: { fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 6, marginTop: 12 },
