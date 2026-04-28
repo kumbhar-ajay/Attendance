@@ -6,9 +6,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { getHiddenWorkers, toggleHideWorker } from '../api';
 import { COLORS, ROLE_LABELS } from '../config';
+import { useStore } from '../store';
 
 export default function HiddenWorkers({ navigation }) {
   const insets = useSafeAreaInsets();
+  const { user } = useStore();
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
@@ -74,7 +76,9 @@ export default function HiddenWorkers({ navigation }) {
               </View>
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={styles.name}>{w.name}</Text>
-                <Text style={styles.sub}>{ROLE_LABELS[w.role]} · ₹{w.rate}/day</Text>
+                <Text style={styles.sub}>
+                  {user?.role === 'manager' ? ROLE_LABELS[w.role] : `${ROLE_LABELS[w.role]} · ₹${w.rate}/day`}
+                </Text>
               </View>
               <TouchableOpacity style={styles.moreBtn} onPress={() => { setSelected(w); setShowMenu(true); }}>
                 <Text style={styles.moreBtnText}>•••</Text>
@@ -90,7 +94,9 @@ export default function HiddenWorkers({ navigation }) {
           <View style={styles.sheet}>
             <View style={styles.handle} />
             <Text style={styles.sheetTitle}>{selected?.name}</Text>
-            <Text style={styles.sheetSub}>{ROLE_LABELS[selected?.role]} · ₹{selected?.rate}/day</Text>
+            <Text style={styles.sheetSub}>
+              {user?.role === 'manager' ? ROLE_LABELS[selected?.role] : `${ROLE_LABELS[selected?.role]} · ₹${selected?.rate}/day`}
+            </Text>
             {menuItems.map((item, i) => (
               <TouchableOpacity key={i} style={styles.sheetItem} onPress={item.action}>
                 <Text style={styles.sheetIcon}>{item.icon}</Text>

@@ -173,107 +173,121 @@ export default function ManagerHome({ navigation }) {
   const renderWorker = ({ item: w, index }) => {
     const isMarked = !!w.todayAttendance;
     const currentAtt = w.todayAttendance?.value;
+    const prevWorker = index > 0 ? filtered[index - 1] : null;
+    const showRecentDivider = user?.role === 'manager'
+      && index > 0
+      && prevWorker?.recentByManager
+      && !w.recentByManager;
 
     return (
-      <View style={[styles.workerCard, isMarked && styles.workerCardFaded]}>
-        <View style={styles.workerTop}>
-          <View style={styles.serialBadge}><Text style={styles.serialText}>{index + 1}</Text></View>
-          <Avatar name={w.name} />
-          <View style={{ flex: 1, marginLeft: 10 }}>
-            <Text style={styles.workerName}>{w.name}</Text>
-            <Text style={styles.workerSub}>
-              {user?.role === 'manager' ? ROLE_LABELS[w.role] : `${ROLE_LABELS[w.role]} · ₹${w.rate}/day`}
-            </Text>
+      <>
+        {showRecentDivider && (
+          <View style={styles.groupDividerWrap}>
+            <View style={styles.groupDividerLine} />
+            <Text style={styles.groupDividerText}>Other Workers</Text>
+            <View style={styles.groupDividerLine} />
           </View>
-          {isMarked && <AttBadge value={currentAtt} />}
-          <TouchableOpacity onPress={() => { setSelectedWorker(w); setShowMenu(true); }} style={styles.moreBtn}>
-            <Text style={styles.moreBtnText}>•••</Text>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.attRow}>
-          {QUICK_ATT.map(a => (
-            <TouchableOpacity
-              key={a.value}
-              style={[styles.attBtn, currentAtt === a.value && { backgroundColor: ATT_MAP[a.value]?.color || COLORS.primary, borderColor: ATT_MAP[a.value]?.color }]}
-              onPress={() => handleMarkAttendance(w, a.value)}
-              disabled={!!actionLoading[w._id]}
-            >
-              {actionLoading[w._id] && currentAtt !== a.value ? null :
-                <Text style={[styles.attBtnText, currentAtt === a.value && { color: '#fff' }]}>{a.label}</Text>}
+        )}
+        <View style={[styles.workerCard, isMarked && styles.workerCardFaded]}>
+          <View style={styles.workerTop}>
+            <View style={styles.serialBadge}><Text style={styles.serialText}>{index + 1}</Text></View>
+            <Avatar name={w.name} />
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={styles.workerName}>{w.name}</Text>
+              <Text style={styles.workerSub}>
+                {user?.role === 'manager' ? ROLE_LABELS[w.role] : `${ROLE_LABELS[w.role]} · ₹${w.rate}/day`}
+              </Text>
+            </View>
+            {isMarked && <AttBadge value={currentAtt} />}
+            <TouchableOpacity onPress={() => { setSelectedWorker(w); setShowMenu(true); }} style={styles.moreBtn}>
+              <Text style={styles.moreBtnText}>•••</Text>
             </TouchableOpacity>
-          ))}
-          <TouchableOpacity style={styles.attBtn} onPress={() => setShowMoreAtt(w._id)}>
-            <Text style={styles.attBtnText}>+</Text>
-          </TouchableOpacity>
-          {actionLoading[w._id] && <ActivityIndicator size="small" color={COLORS.primary} style={{ marginLeft: 8 }} />}
-        </ScrollView>
+          </View>
 
-        <View style={styles.advRow}>
-          <Text style={styles.advLabel}>Adv:</Text>
-          {w.todayAdvance > 0 ? (
-            <>
-              <TouchableOpacity style={[styles.advBtn, { backgroundColor: COLORS.green, borderColor: COLORS.green }]} disabled>
-                <Text style={[styles.advBtnText, { color: '#fff', fontWeight: '700' }]}>₹{w.todayAdvance}</Text>
-              </TouchableOpacity>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.attRow}>
+            {QUICK_ATT.map(a => (
               <TouchableOpacity
-                style={[styles.advBtn, { borderColor: COLORS.red, flexDirection: 'row', alignItems: 'center', gap: 4 }]}
-                onPress={() => handleRemoveAdvance(w)}
-                disabled={!!advLoading[w._id]}>
-                <Text style={[styles.advBtnText, { color: COLORS.red, fontWeight: '700' }]}>✕ Cancel</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              {QUICK_ADV.map(amt => (
-                <TouchableOpacity key={amt}
-                  style={styles.advBtn}
-                  onPress={() => handleAddAdvance(w, amt)}
-                  disabled={!!advLoading[w._id]}>
-                  <Text style={styles.advBtnText}>₹{amt}</Text>
-                </TouchableOpacity>
-              ))}
-              <TouchableOpacity style={styles.advBtn} onPress={() => openAdvanceInput(w._id, index)} disabled={!!advLoading[w._id]}>
-                <Text style={styles.advBtnText}>+</Text>
-              </TouchableOpacity>
-            </>
-          )}
-          {advLoading[w._id] && <ActivityIndicator size="small" color={COLORS.amber} style={{ marginLeft: 8 }} />}
-        </View>
-
-        {(w.todayAdvance > 0 || w.todayAttendance?.travelExpense > 0) && (
-          <View style={styles.todayInfo}>
-            {w.todayAdvance > 0 && <Text style={styles.todayInfoText}>Advance today: ₹{w.todayAdvance}</Text>}
-            {w.todayAttendance?.travelExpense > 0 && <Text style={styles.todayInfoText}>Travel: ₹{w.todayAttendance.travelExpense}</Text>}
-          </View>
-        )}
-
-        {showAdvInput === w._id && (
-          <View style={styles.advInputRow}>
-            <TextInput style={styles.advInput} placeholder="Enter amount" keyboardType="numeric" value={advAmount} onChangeText={setAdvAmount} autoFocus />
-            <TouchableOpacity style={styles.advSaveBtn} onPress={() => handleAddAdvance(w, advAmount)}>
-              <Text style={{ color: '#fff', fontWeight: '600' }}>Add</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setShowAdvInput(null)} style={{ padding: 8 }}>
-              <Text style={{ color: COLORS.textSecondary }}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {showMoreAtt === w._id && (
-          <View style={styles.moreAttRow}>
-            {MORE_ATT.map(a => (
-              <TouchableOpacity key={a.value} style={[styles.attBtn, { backgroundColor: '#E8F5E9' }]}
-                onPress={() => { handleMarkAttendance(w, a.value); setShowMoreAtt(null); }}>
-                <Text style={[styles.attBtnText, { color: COLORS.green }]}>{a.label}</Text>
+                key={a.value}
+                style={[styles.attBtn, currentAtt === a.value && { backgroundColor: ATT_MAP[a.value]?.color || COLORS.primary, borderColor: ATT_MAP[a.value]?.color }]}
+                onPress={() => handleMarkAttendance(w, a.value)}
+                disabled={!!actionLoading[w._id]}
+              >
+                {actionLoading[w._id] && currentAtt !== a.value ? null :
+                  <Text style={[styles.attBtnText, currentAtt === a.value && { color: '#fff' }]}>{a.label}</Text>}
               </TouchableOpacity>
             ))}
-            <TouchableOpacity onPress={() => setShowMoreAtt(null)} style={{ padding: 8 }}>
-              <Text style={{ color: COLORS.textSecondary, fontSize: 13 }}>Close</Text>
+            <TouchableOpacity style={styles.attBtn} onPress={() => setShowMoreAtt(w._id)}>
+              <Text style={styles.attBtnText}>+</Text>
             </TouchableOpacity>
+            {actionLoading[w._id] && <ActivityIndicator size="small" color={COLORS.primary} style={{ marginLeft: 8 }} />}
+          </ScrollView>
+
+          <View style={styles.advRow}>
+            <Text style={styles.advLabel}>Adv:</Text>
+            {w.todayAdvance > 0 ? (
+              <>
+                <TouchableOpacity style={[styles.advBtn, { backgroundColor: COLORS.green, borderColor: COLORS.green }]} disabled>
+                  <Text style={[styles.advBtnText, { color: '#fff', fontWeight: '700' }]}>₹{w.todayAdvance}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.advBtn, { borderColor: COLORS.red, flexDirection: 'row', alignItems: 'center', gap: 4 }]}
+                  onPress={() => handleRemoveAdvance(w)}
+                  disabled={!!advLoading[w._id]}>
+                  <Text style={[styles.advBtnText, { color: COLORS.red, fontWeight: '700' }]}>✕ Cancel</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                {QUICK_ADV.map(amt => (
+                  <TouchableOpacity key={amt}
+                    style={styles.advBtn}
+                    onPress={() => handleAddAdvance(w, amt)}
+                    disabled={!!advLoading[w._id]}>
+                    <Text style={styles.advBtnText}>₹{amt}</Text>
+                  </TouchableOpacity>
+                ))}
+                <TouchableOpacity style={styles.advBtn} onPress={() => openAdvanceInput(w._id, index)} disabled={!!advLoading[w._id]}>
+                  <Text style={styles.advBtnText}>+</Text>
+                </TouchableOpacity>
+              </>
+            )}
+            {advLoading[w._id] && <ActivityIndicator size="small" color={COLORS.amber} style={{ marginLeft: 8 }} />}
           </View>
-        )}
-      </View>
+
+          {(w.todayAdvance > 0 || w.todayAttendance?.travelExpense > 0) && (
+            <View style={styles.todayInfo}>
+              {w.todayAdvance > 0 && <Text style={styles.todayInfoText}>Advance today: ₹{w.todayAdvance}</Text>}
+              {w.todayAttendance?.travelExpense > 0 && <Text style={styles.todayInfoText}>Travel: ₹{w.todayAttendance.travelExpense}</Text>}
+            </View>
+          )}
+
+          {showAdvInput === w._id && (
+            <View style={styles.advInputRow}>
+              <TextInput style={styles.advInput} placeholder="Enter amount" keyboardType="numeric" value={advAmount} onChangeText={setAdvAmount} autoFocus />
+              <TouchableOpacity style={styles.advSaveBtn} onPress={() => handleAddAdvance(w, advAmount)}>
+                <Text style={{ color: '#fff', fontWeight: '600' }}>Add</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowAdvInput(null)} style={{ padding: 8 }}>
+                <Text style={{ color: COLORS.textSecondary }}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {showMoreAtt === w._id && (
+            <View style={styles.moreAttRow}>
+              {MORE_ATT.map(a => (
+                <TouchableOpacity key={a.value} style={[styles.attBtn, { backgroundColor: '#E8F5E9' }]}
+                  onPress={() => { handleMarkAttendance(w, a.value); setShowMoreAtt(null); }}>
+                  <Text style={[styles.attBtnText, { color: COLORS.green }]}>{a.label}</Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity onPress={() => setShowMoreAtt(null)} style={{ padding: 8 }}>
+                <Text style={{ color: COLORS.textSecondary, fontSize: 13 }}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </>
     );
   };
 
@@ -443,6 +457,9 @@ const styles = StyleSheet.create({
   filterTabTextActive: { color: '#fff', fontWeight: '600' },
   dateHeader: { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: COLORS.bg },
   dateHeaderText: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '500' },
+  groupDividerWrap: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, marginTop: 6, marginBottom: 4 },
+  groupDividerLine: { flex: 1, height: 1, backgroundColor: COLORS.border },
+  groupDividerText: { fontSize: 11, fontWeight: '700', color: COLORS.textSecondary, marginHorizontal: 10, letterSpacing: 0.4 },
   serialBadge: { width: 22, height: 22, borderRadius: 11, backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center', marginRight: 8 },
   serialText: { color: '#fff', fontSize: 11, fontWeight: '700' },
   workerCard: { backgroundColor: '#fff', borderRadius: 12, marginBottom: 10, marginTop: 2, padding: 12, borderWidth: 1, borderColor: COLORS.border, elevation: 1 },

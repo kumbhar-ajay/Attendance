@@ -507,6 +507,9 @@ app.get('/api/attendance/today', auth, role('admin', 'manager'), async (req, res
   try {
     const qDate    = req.query.date ? toUTCDay(req.query.date) : getToday();
     const qDateEnd = new Date(qDate.getTime() + 86400000);
+    const prevDate = new Date(qDate);
+    prevDate.setUTCDate(prevDate.getUTCDate() - 1);
+    const prevDateEnd = new Date(prevDate.getTime() + 86400000);
     let workers;
     if (req.user.role === 'manager') {
       const self = await User.findById(req.user._id).lean();
@@ -526,24 +529,35 @@ app.get('/api/attendance/today', auth, role('admin', 'manager'), async (req, res
     const ids  = workers.map(w => w._id);
     const atts = await Attendance.find({ workerId: { $in: ids }, date: { $gte: qDate, $lt: qDateEnd } }).lean();
     const advs = await Advance.find({ workerId: { $in: ids }, date: { $gte: qDate, $lt: qDateEnd } }).lean();
+    const prevDayAtts = req.user.role === 'manager'
+      ? await Attendance.find({ workerId: { $in: ids }, markedBy: req.user._id, date: { $gte: prevDate, $lt: prevDateEnd } }).lean()
+      : [];
     const attMap = {}, advMap = {}, advIdMap = {};
+    const prevDayMarkedSet = new Set(prevDayAtts.map(a => a.workerId));
     atts.forEach(a => { attMap[a.workerId] = a; });
     advs.forEach(a => { advMap[a.workerId] = (advMap[a.workerId] || 0) + a.amount; advIdMap[a.workerId] = a._id; });
-    const result = workers.map(w => ({ ...w, todayAttendance: attMap[w._id] || null, todayAdvance: advMap[w._id] || 0, todayAdvanceId: advIdMap[w._id] || null }));
-    const order = { manager: 0, mistry: 1, labour: 2, half_mistry: 3 };
+    const result = workers.map(w => ({
+      ...w,
+      todayAttendance: attMap[w._id] || null,
+      todayAdvance: advMap[w._id] || 0,
+      todayAdvanceId: advIdMap[w._id] || null,
+      recentByManager: req.user.role === 'manager' && w._id !== req.user._id ? prevDayMarkedSet.has(w._id) : false,
+    }));
+    const order = { labour: 0, mistry: 1, half_mistry: 2, manager: 3 };
     result.sort((a, b) => {
       if (req.user.role === 'manager') {
         const isSelfA = a._id === req.user._id ? 1 : 0;
         const isSelfB = b._id === req.user._id ? 1 : 0;
         if (isSelfA !== isSelfB) return isSelfB - isSelfA;
-      }
-      const hasAttA = !!a.todayAttendance;
-      const hasAttB = !!b.todayAttendance;
-      if (hasAttA !== hasAttB) return hasAttB ? 1 : -1; // attendance marked first
-      if (req.user.role === 'manager') {
+        const recentA = a.recentByManager ? 1 : 0;
+        const recentB = b.recentByManager ? 1 : 0;
+        if (recentA !== recentB) return recentB - recentA;
+        const hasRecentGroup = prevDayMarkedSet.size > 0;
+        if (!hasRecentGroup) {
         const ownA = a.createdBy === req.user._id ? 1 : 0;
         const ownB = b.createdBy === req.user._id ? 1 : 0;
         if (ownA !== ownB) return ownB - ownA;
+        }
       }
       return ((order[a.role] ?? 9) - (order[b.role] ?? 9)) || a.name.localeCompare(b.name);
     });

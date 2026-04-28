@@ -1,6 +1,6 @@
 // FILE: mobile/src/screens/MonthHistory.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Platform, Modal, TextInput } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Platform, Modal, TextInput, KeyboardAvoidingView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { getWorkerHistory, markAttendance, editAttendance, editAdvance, addAdvance, editWorkerTravel } from '../api';
@@ -279,52 +279,64 @@ export default function MonthHistory({ navigation, route }) {
 
       {/* Edit Advance Modal */}
       <Modal visible={showEditAdvModal} transparent animationType="slide" onRequestClose={() => setShowEditAdvModal(false)}>
-        <TouchableOpacity style={styles.overlay} onPress={() => setShowEditAdvModal(false)} />
-        <View style={styles.sheet}>
-          <Text style={styles.sheetTitle}>Edit Advance: {editAdvRow ? fmtDate(editAdvRow.date) : ''}</Text>
-          <Text style={styles.sheetSub}>{editAdvRow?._id ? `Current: ₹${editAdvAmount}` : 'No advance on this day yet'}</Text>
-          <TextInput
-            style={styles.advInput}
-            placeholder="Enter amount (₹)"
-            keyboardType="numeric"
-            value={editAdvAmount}
-            onChangeText={setEditAdvAmount}
-            autoFocus
-          />
-          <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
-            <TouchableOpacity style={[styles.cancelBtn, { flex: 1 }]} onPress={() => setShowEditAdvModal(false)}>
-              <Text style={{ color: COLORS.textSecondary, textAlign: 'center' }}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.submitBtn, { flex: 1 }]} onPress={handleEditAdv}>
-              <Text style={styles.submitBtnText}>Save</Text>
-            </TouchableOpacity>
+        <KeyboardAvoidingView
+          style={styles.modalContainer}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 20}
+        >
+          <TouchableOpacity style={styles.overlay} onPress={() => setShowEditAdvModal(false)} />
+          <View style={styles.sheet}>
+            <Text style={styles.sheetTitle}>Edit Advance: {editAdvRow ? fmtDate(editAdvRow.date) : ''}</Text>
+            <Text style={styles.sheetSub}>{editAdvRow?._id ? `Current: ₹${editAdvAmount}` : 'No advance on this day yet'}</Text>
+            <TextInput
+              style={styles.advInput}
+              placeholder="Enter amount (₹)"
+              keyboardType="numeric"
+              value={editAdvAmount}
+              onChangeText={setEditAdvAmount}
+              autoFocus
+            />
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+              <TouchableOpacity style={[styles.cancelBtn, { flex: 1 }]} onPress={() => setShowEditAdvModal(false)}>
+                <Text style={{ color: COLORS.textSecondary, textAlign: 'center' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.submitBtn, { flex: 1 }]} onPress={handleEditAdv}>
+                <Text style={styles.submitBtnText}>Save</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Edit Travel Modal */}
       <Modal visible={showEditTravelModal} transparent animationType="slide" onRequestClose={() => setShowEditTravelModal(false)}>
-        <TouchableOpacity style={styles.overlay} onPress={() => setShowEditTravelModal(false)} />
-        <View style={styles.sheet}>
-          <Text style={styles.sheetTitle}>Edit Travel: {editTravelRow ? fmtDate(editTravelRow.date) : ''}</Text>
-          <Text style={styles.sheetSub}>Enter 0 to clear travel expense for this day</Text>
-          <TextInput
-            style={styles.advInput}
-            placeholder="Enter travel amount (₹)"
-            keyboardType="numeric"
-            value={editTravelAmount}
-            onChangeText={setEditTravelAmount}
-            autoFocus
-          />
-          <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
-            <TouchableOpacity style={[styles.cancelBtn, { flex: 1 }]} onPress={() => setShowEditTravelModal(false)}>
-              <Text style={{ color: COLORS.textSecondary, textAlign: 'center' }}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.submitBtn, { flex: 1 }]} onPress={handleEditTravel}>
-              <Text style={styles.submitBtnText}>Save</Text>
-            </TouchableOpacity>
+        <KeyboardAvoidingView
+          style={styles.modalContainer}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 20}
+        >
+          <TouchableOpacity style={styles.overlay} onPress={() => setShowEditTravelModal(false)} />
+          <View style={styles.sheet}>
+            <Text style={styles.sheetTitle}>Edit Travel: {editTravelRow ? fmtDate(editTravelRow.date) : ''}</Text>
+            <Text style={styles.sheetSub}>Enter 0 to clear travel expense for this day</Text>
+            <TextInput
+              style={styles.advInput}
+              placeholder="Enter travel amount (₹)"
+              keyboardType="numeric"
+              value={editTravelAmount}
+              onChangeText={setEditTravelAmount}
+              autoFocus
+            />
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+              <TouchableOpacity style={[styles.cancelBtn, { flex: 1 }]} onPress={() => setShowEditTravelModal(false)}>
+                <Text style={{ color: COLORS.textSecondary, textAlign: 'center' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.submitBtn, { flex: 1 }]} onPress={handleEditTravel}>
+                <Text style={styles.submitBtnText}>Save</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -358,6 +370,7 @@ const styles = StyleSheet.create({
   tableHead: { backgroundColor: COLORS.bg },
   cell: { width: 80, paddingHorizontal: 8, paddingVertical: 10, fontSize: 12, color: COLORS.textPrimary, borderRightWidth: 0.5, borderRightColor: COLORS.border },
   headCell: { fontWeight: '700', color: COLORS.textSecondary, fontSize: 11 },
+  modalContainer: { flex: 1, justifyContent: 'flex-end' },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
   sheet: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 36 },
   sheetTitle: { fontSize: 17, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 4 },
