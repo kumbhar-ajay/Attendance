@@ -36,7 +36,7 @@ api.interceptors.response.use(
 export const login = (mobile, password) => api.post('/api/auth/login', { mobile, password });
 export const changePassword = (currentPassword, newPassword) => api.put('/api/auth/change-password', { currentPassword, newPassword });
 export const adminChangePassword = (userId, password) => api.put(`/api/admin/users/${userId}/password`, { password });
-export const adminChangeRate = (userId, rate) => api.put(`/api/admin/users/${userId}/rate`, { rate });
+export const adminChangeRate = (userId, rate, applyFrom) => api.put(`/api/admin/users/${userId}/rate`, { rate, applyFrom });
 
 // Upload
 export const uploadPhoto = (image) => api.post('/api/upload/photo', { image });

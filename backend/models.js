@@ -2,6 +2,11 @@
 const mongoose = require('mongoose');
 const { randomUUID } = require('crypto');
 
+const rateHistorySchema = new mongoose.Schema({
+  rate: { type: Number, required: true },
+  effectiveMonth: { type: String, required: true },
+}, { _id: false });
+
 // ─── User ───────────────────────────────────────────────────────────────────
 const userSchema = new mongoose.Schema({
   _id:             { type: String, default: () => randomUUID() },
@@ -15,6 +20,7 @@ const userSchema = new mongoose.Schema({
   createdBy:       { type: String, default: null },
   isHidden:        { type: Boolean, default: false },
   hiddenForManagers:{ type: [String], default: [] },
+  rateHistory:     { type: [rateHistorySchema], default: [] },
   disabledAt:      { type: String, default: null },
   longLeaveReason: { type: String, default: '' },
 }, { timestamps: true });

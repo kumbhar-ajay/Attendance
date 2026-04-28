@@ -8,7 +8,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
 import Toast from 'react-native-toast-message';
-import { getTodayAttendance, markAttendance, addAdvance, deleteAdvance, fillAbsent, updateWorkerStatus } from '../api';
+import { getTodayAttendance, markAttendance, addAdvance, deleteAdvance, fillAbsent, updateWorkerStatus, adminChangeRate } from '../api';
 import { useStore } from '../store';
 import { COLORS, ATT_MAP, QUICK_ATT, MORE_ATT, QUICK_ADV, ROLE_LABELS } from '../config';
 
@@ -52,6 +52,9 @@ export default function ManagerHome({ navigation }) {
   const [advAmount, setAdvAmount] = useState('');
   const [actionLoading, setActionLoading] = useState({});
   const [advLoading, setAdvLoading] = useState({});
+  const [showRateInput, setShowRateInput] = useState(false);
+  const [newRate, setNewRate] = useState('');
+  const [rateApplyFrom, setRateApplyFrom] = useState('this-month');
   const listRef = useRef(null);
 
   useEffect(() => {
@@ -152,6 +155,31 @@ export default function ManagerHome({ navigation }) {
         } catch (e) { Toast.show({ type: 'error', text1: 'Failed' }); }
       }}
     ]);
+  };
+
+  const openRateModal = () => {
+    setShowMenu(false);
+    setNewRate(String(selectedWorker?.rate || ''));
+    setRateApplyFrom('this-month');
+    setShowRateInput(true);
+  };
+
+  const handleChangeRate = async () => {
+    const numericRate = Number(newRate);
+    if (!numericRate || numericRate <= 0) { Toast.show({ type: 'error', text1: 'Enter valid rate' }); return; }
+    try {
+      await adminChangeRate(selectedWorker._id, numericRate, rateApplyFrom);
+      Toast.show({
+        type: 'success',
+        text1: 'Rate updated',
+        text2: rateApplyFrom === 'this-month' ? 'Applied from this month' : 'Scheduled from next month',
+      });
+      setShowRateInput(false);
+      setNewRate('');
+      fetchData();
+    } catch (e) {
+      Toast.show({ type: 'error', text1: e.response?.data?.message || 'Failed to update rate' });
+    }
   };
 
   const getFilteredWorkers = () => {
@@ -410,6 +438,7 @@ export default function ManagerHome({ navigation }) {
             {[
               { label: 'View Month History', icon: '📅', action: () => { setShowMenu(false); navigation.navigate('MonthHistory', { worker: selectedWorker }); } },
               { label: 'Edit Previous Attendance', icon: '✏️', action: () => { setShowMenu(false); navigation.navigate('MonthHistory', { worker: selectedWorker, editMode: true }); } },
+              ...(user?.role === 'admin' ? [{ label: 'Change Rate', icon: '💰', action: openRateModal }] : []),
               ...((user?.role === 'manager' && selectedWorker?.role === 'manager') ? [] : [{ label: selectedWorker?.isHidden ? 'Show on Home' : 'Hide from Home', icon: '👁', action: async () => {
                 try { await require('../api').toggleHideWorker(selectedWorker._id); Toast.show({ type: 'success', text1: 'Done' }); setShowMenu(false); fetchData(); }
                 catch { Toast.show({ type: 'error', text1: 'Failed' }); }
@@ -426,6 +455,31 @@ export default function ManagerHome({ navigation }) {
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
+      </Modal>
+
+      <Modal visible={showRateInput} transparent animationType="fade" onRequestClose={() => setShowRateInput(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.alertBox}>
+            <Text style={styles.alertTitle}>Change Rate for {selectedWorker?.name}</Text>
+            <TextInput style={styles.input} placeholder="New Rate" keyboardType="numeric" value={newRate} onChangeText={setNewRate} />
+            <View style={styles.rateChoiceRow}>
+              <TouchableOpacity style={[styles.rateChoiceBtn, rateApplyFrom === 'this-month' && styles.rateChoiceBtnActive]} onPress={() => setRateApplyFrom('this-month')}>
+                <Text style={[styles.rateChoiceText, rateApplyFrom === 'this-month' && styles.rateChoiceTextActive]}>Apply This Month</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.rateChoiceBtn, rateApplyFrom === 'next-month' && styles.rateChoiceBtnActive]} onPress={() => setRateApplyFrom('next-month')}>
+                <Text style={[styles.rateChoiceText, rateApplyFrom === 'next-month' && styles.rateChoiceTextActive]}>Apply Next Month</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.alertBtns}>
+              <TouchableOpacity style={styles.alertBtnCancel} onPress={() => setShowRateInput(false)}>
+                <Text style={styles.alertBtnCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.alertBtnOk} onPress={handleChangeRate}>
+                <Text style={styles.alertBtnOkText}>Update</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
     </KeyboardAvoidingView>
   );
@@ -511,5 +565,10 @@ const styles = StyleSheet.create({
   alertBtnCancelText: { fontSize: 15, color: COLORS.textSecondary },
   alertBtnOk: { flex: 1, padding: 12, borderRadius: 8, backgroundColor: COLORS.primary, alignItems: 'center' },
   alertBtnOkText: { fontSize: 15, color: '#fff', fontWeight: '600' },
+  rateChoiceRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  rateChoiceBtn: { flex: 1, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 10 },
+  rateChoiceBtnActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  rateChoiceText: { color: COLORS.textPrimary, textAlign: 'center', fontSize: 13, fontWeight: '600' },
+  rateChoiceTextActive: { color: '#fff' },
   input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 12, fontSize: 15, marginTop: 8 },
 });

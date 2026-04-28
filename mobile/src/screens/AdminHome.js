@@ -28,6 +28,9 @@ export default function AdminHome({ navigation }) {
   const [showMgrMenu, setShowMgrMenu] = useState(false);
   const [newPass, setNewPass] = useState('');
   const [showPassInput, setShowPassInput] = useState(false);
+  const [showRateInput, setShowRateInput] = useState(false);
+  const [newRate, setNewRate] = useState('');
+  const [rateApplyFrom, setRateApplyFrom] = useState('this-month');
 
   // Re-fetch whenever screen comes into focus (e.g. after navigating back)
   useFocusEffect(
@@ -91,6 +94,29 @@ export default function AdminHome({ navigation }) {
     } catch (e) { Toast.show({ type: 'error', text1: 'Failed' }); }
   };
 
+  const openRateModal = () => {
+    setShowMgrMenu(false);
+    setNewRate(String(selectedMgr?.rate || ''));
+    setRateApplyFrom('this-month');
+    setShowRateInput(true);
+  };
+
+  const handleChangeRate = async () => {
+    const numericRate = Number(newRate);
+    if (!numericRate || numericRate <= 0) { Toast.show({ type: 'error', text1: 'Enter valid rate' }); return; }
+    try {
+      await adminChangeRate(selectedMgr._id, numericRate, rateApplyFrom);
+      Toast.show({
+        type: 'success',
+        text1: 'Rate updated',
+        text2: rateApplyFrom === 'this-month' ? 'Applied from this month' : 'Scheduled from next month',
+      });
+      setShowRateInput(false);
+      setNewRate('');
+      fetchAll();
+    } catch (e) { Toast.show({ type: 'error', text1: e.response?.data?.message || 'Failed to update rate' }); }
+  };
+
   const changeMonth = (dir) => {
     const [y, m] = month.split('-').map(Number);
     const d = new Date(y, m - 1 + dir, 1);
@@ -147,6 +173,9 @@ export default function AdminHome({ navigation }) {
               <Text style={styles.mgrName}>{m.name}</Text>
               <Text style={styles.mgrSub}>{m.workerCount || 0} workers · {m.mobile} · ₹{m.rate || 0}/day</Text>
             </View>
+            <TouchableOpacity style={styles.mgrMoreBtn} onPress={() => { setSelectedMgr(m); setShowMgrMenu(true); }}>
+              <Text style={styles.mgrMoreBtnText}>•••</Text>
+            </TouchableOpacity>
             <View style={[styles.statusDot, { backgroundColor: m.status === 'active' ? COLORS.green : COLORS.red }]} />
           </TouchableOpacity>
         ))}
@@ -208,6 +237,9 @@ export default function AdminHome({ navigation }) {
         <TouchableOpacity style={styles.overlay} onPress={() => setShowMgrMenu(false)} />
         <View style={styles.sheet}>
           <Text style={styles.sheetTitle}>{selectedMgr?.name}</Text>
+          <TouchableOpacity style={styles.menuItem} onPress={openRateModal}>
+            <Text style={styles.menuItemText}>💰 Change Rate</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMgrMenu(false); setShowPassInput(true); }}>
             <Text style={styles.menuItemText}>🔑 Change Password</Text>
           </TouchableOpacity>
@@ -249,6 +281,31 @@ export default function AdminHome({ navigation }) {
           </View>
         </View>
       </Modal>
+
+      <Modal visible={showRateInput} transparent animationType="fade" onRequestClose={() => setShowRateInput(false)}>
+        <View style={styles.overlay}>
+          <View style={styles.alertBox}>
+            <Text style={styles.sheetTitle}>Change Rate for {selectedMgr?.name}</Text>
+            <TextInput style={styles.input} placeholder="New Rate" keyboardType="numeric" value={newRate} onChangeText={setNewRate} />
+            <View style={styles.rateChoiceRow}>
+              <TouchableOpacity style={[styles.rateChoiceBtn, rateApplyFrom === 'this-month' && styles.rateChoiceBtnActive]} onPress={() => setRateApplyFrom('this-month')}>
+                <Text style={[styles.rateChoiceText, rateApplyFrom === 'this-month' && styles.rateChoiceTextActive]}>Apply This Month</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.rateChoiceBtn, rateApplyFrom === 'next-month' && styles.rateChoiceBtnActive]} onPress={() => setRateApplyFrom('next-month')}>
+                <Text style={[styles.rateChoiceText, rateApplyFrom === 'next-month' && styles.rateChoiceTextActive]}>Apply Next Month</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity style={[styles.submitBtn, { flex: 1, backgroundColor: COLORS.border }]} onPress={() => setShowRateInput(false)}>
+                <Text style={{ color: COLORS.textPrimary, fontWeight: '600', textAlign: 'center' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.submitBtn, { flex: 1 }]} onPress={handleChangeRate}>
+                <Text style={styles.submitBtnText}>Update</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -272,6 +329,8 @@ const styles = StyleSheet.create({
   mgrAvatarText: { color: '#fff', fontSize: 18, fontWeight: '700' },
   mgrName: { fontSize: 15, fontWeight: '600', color: COLORS.textPrimary },
   mgrSub: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
+  mgrMoreBtn: { paddingHorizontal: 8, paddingVertical: 4, marginRight: 6 },
+  mgrMoreBtnText: { color: COLORS.textSecondary, fontSize: 18, letterSpacing: 1 },
   statusDot: { width: 10, height: 10, borderRadius: 5 },
   monthNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10, marginBottom: 10, borderWidth: 1, borderColor: COLORS.border },
   navArrow: { fontSize: 22, color: COLORS.primary, fontWeight: '700' },
@@ -291,4 +350,9 @@ const styles = StyleSheet.create({
   menuItem: { paddingVertical: 14, borderTopWidth: 1, borderTopColor: COLORS.border },
   menuItemText: { fontSize: 16, color: COLORS.textPrimary },
   alertBox: { backgroundColor: '#fff', borderRadius: 16, padding: 24, margin: 24 },
+  rateChoiceRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  rateChoiceBtn: { flex: 1, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 10 },
+  rateChoiceBtnActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  rateChoiceText: { color: COLORS.textPrimary, textAlign: 'center', fontSize: 13, fontWeight: '600' },
+  rateChoiceTextActive: { color: '#fff' },
 });

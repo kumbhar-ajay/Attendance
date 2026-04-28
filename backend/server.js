@@ -21,9 +21,43 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
 // ─────────────── HELPERS ───────────────
-const stripPw = (u) => { if (!u) return u; const { password, ...rest } = u; return rest; };
+const stripPw = (u) => {
+  if (!u) return u;
+  const { password, rateHistory, hiddenForManagers, ...rest } = u;
+  return rest;
+};
 const getToday = () => { const d = new Date(); d.setUTCHours(0, 0, 0, 0); return d; };
 const toUTCDay = (dateStr) => new Date(dateStr + 'T00:00:00.000Z');
+const monthKeyFromDate = (date) => {
+  const d = new Date(date);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+};
+const getNextMonthKey = (monthKey) => {
+  const [year, month] = monthKey.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month, 1));
+  return monthKeyFromDate(date);
+};
+const sortRateHistory = (rateHistory = []) => [...rateHistory].sort((a, b) => a.effectiveMonth.localeCompare(b.effectiveMonth));
+const getRateHistoryWithBaseline = (user) => {
+  const normalized = Array.isArray(user?.rateHistory) ? user.rateHistory
+    .filter(entry => entry && entry.effectiveMonth && Number(entry.rate) >= 0)
+    .map(entry => ({ rate: Number(entry.rate), effectiveMonth: entry.effectiveMonth })) : [];
+  if (normalized.length > 0) return sortRateHistory(normalized);
+  const baselineMonth = monthKeyFromDate(user?.createdAt || new Date());
+  return [{ rate: Number(user?.rate) || 0, effectiveMonth: baselineMonth }];
+};
+const getEffectiveRateForMonth = (user, monthKey) => {
+  const history = getRateHistoryWithBaseline(user);
+  let effectiveRate = Number(user?.rate) || 0;
+  history.forEach(entry => {
+    if (entry.effectiveMonth <= monthKey) effectiveRate = Number(entry.rate) || 0;
+  });
+  return effectiveRate;
+};
+const withEffectiveRate = (user, monthKey = monthKeyFromDate(new Date())) => ({
+  ...stripPw(user),
+  rate: getEffectiveRateForMonth(user, monthKey),
+});
 
 // ─────────────── MIDDLEWARE ───────────────
 const auth = async (req, res, next) => {
@@ -78,7 +112,7 @@ app.post('/api/auth/login', async (req, res) => {
     const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '30d' });
     res.json({
       success: true, token, refreshToken,
-      user: { _id: user._id, name: user.name, role: user.role, photoUrl: user.photoUrl, mobile: user.mobile, rate: user.rate },
+      user: { _id: user._id, name: user.name, role: user.role, photoUrl: user.photoUrl, mobile: user.mobile, rate: getEffectiveRateForMonth(user, monthKeyFromDate(new Date())) },
     });
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
@@ -118,7 +152,7 @@ app.get('/api/admin/managers', auth, role('admin'), async (req, res) => {
     const managers = await User.find({ role: 'manager' }).lean();
     const result = await Promise.all(managers.map(async m => {
       const workerCount = await User.countDocuments({ createdBy: m._id, role: { $in: ['labour', 'mistry', 'half_mistry'] } });
-      return { ...stripPw(m), workerCount };
+      return { ...withEffectiveRate(m), workerCount };
     }));
     res.json({ success: true, data: result });
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
@@ -131,8 +165,19 @@ app.post('/api/admin/managers', auth, role('admin'), async (req, res) => {
     if (mobile.length !== 10) return res.status(400).json({ success: false, message: 'Mobile must be 10 digits' });
     const existing = await User.findOne({ mobile }).lean();
     if (existing) return res.status(400).json({ success: false, message: 'Mobile number already registered' });
-    const manager = await User.create({ name, mobile, role: 'manager', password: mobile, photoUrl: photoUrl || null, createdBy: req.user._id, status: 'active', rate: Number(rate) || 0 });
-    res.json({ success: true, data: stripPw(manager.toObject()) });
+    const numericRate = Number(rate) || 0;
+    const manager = await User.create({
+      name,
+      mobile,
+      role: 'manager',
+      password: mobile,
+      photoUrl: photoUrl || null,
+      createdBy: req.user._id,
+      status: 'active',
+      rate: numericRate,
+      rateHistory: [{ rate: numericRate, effectiveMonth: monthKeyFromDate(new Date()) }],
+    });
+    res.json({ success: true, data: withEffectiveRate(manager.toObject()) });
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
@@ -147,10 +192,20 @@ app.put('/api/admin/users/:id/password', auth, role('admin'), async (req, res) =
 
 app.put('/api/admin/users/:id/rate', auth, role('admin'), async (req, res) => {
   try {
-    const { rate } = req.body;
-    if (!rate || rate <= 0) return res.status(400).json({ success: false, message: 'Valid rate required' });
-    await User.findByIdAndUpdate(req.params.id, { $set: { rate } });
-    res.json({ success: true, message: 'Rate updated' });
+    const { rate, applyFrom } = req.body;
+    const numericRate = Number(rate);
+    if (!numericRate || numericRate <= 0) return res.status(400).json({ success: false, message: 'Valid rate required' });
+    if (!['this-month', 'next-month'].includes(applyFrom)) return res.status(400).json({ success: false, message: 'applyFrom must be this-month or next-month' });
+    const user = await User.findById(req.params.id).lean();
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    const currentMonth = monthKeyFromDate(new Date());
+    const effectiveMonth = applyFrom === 'next-month' ? getNextMonthKey(currentMonth) : currentMonth;
+    const history = getRateHistoryWithBaseline(user).filter(entry => entry.effectiveMonth !== effectiveMonth);
+    history.push({ rate: numericRate, effectiveMonth });
+    const updates = { rateHistory: sortRateHistory(history) };
+    if (effectiveMonth <= currentMonth) updates.rate = numericRate;
+    await User.findByIdAndUpdate(req.params.id, { $set: updates });
+    res.json({ success: true, message: `Rate updated from ${effectiveMonth}`, effectiveMonth });
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
@@ -171,9 +226,10 @@ const buildReport = async (query, month) => {
   const workers = await User.find({ ...query, status: { $ne: 'disabled' } }).lean();
   return Promise.all(workers.map(async w => {
     const { totalDays, totalAdvance, totalTravel } = await calcMonthStats(w._id, start, end);
-    const earned  = w.rate * totalDays;
+    const rate = getEffectiveRateForMonth(w, month);
+    const earned  = rate * totalDays;
     const balance = earned - totalAdvance + totalTravel;
-    return { _id: w._id, name: w.name, role: w.role, rate: w.rate, totalDays, earned, totalAdvance, totalTravel, balance };
+    return { _id: w._id, name: w.name, role: w.role, rate, totalDays, earned, totalAdvance, totalTravel, balance };
   }));
 };
 
@@ -198,9 +254,10 @@ app.get('/api/report/balance', auth, role('admin'), async (req, res) => {
     const workers = await User.find({ role: { $in: ['labour', 'mistry', 'half_mistry', 'manager'] }, status: { $in: ['active', 'disabled'] } }).lean();
     const rows = await Promise.all(workers.map(async w => {
       const { totalDays, totalAdvance, totalTravel } = await calcMonthStats(w._id, start, end);
-      const earned  = w.rate * totalDays;
+      const rate = getEffectiveRateForMonth(w, month);
+      const earned  = rate * totalDays;
       const balance = earned - totalAdvance + totalTravel;
-      return { _id: w._id, name: w.name, role: w.role, rate: w.rate, totalDays, earned, totalAdvance, totalTravel, balance, status: w.status };
+      return { _id: w._id, name: w.name, role: w.role, rate, totalDays, earned, totalAdvance, totalTravel, balance, status: w.status };
     }));
     const totals = rows.reduce((acc, r) => ({
       totalEarned:  acc.totalEarned  + r.earned,
@@ -222,9 +279,10 @@ app.get('/api/report/balance-pdf', auth, role('admin'), async (req, res) => {
     const workers = await User.find({ role: { $in: ['labour', 'mistry', 'half_mistry', 'manager'] }, status: { $in: ['active', 'disabled'] } }).lean();
     const rows = await Promise.all(workers.map(async w => {
       const { totalDays, totalAdvance, totalTravel } = await calcMonthStats(w._id, start, end);
-      const earned  = w.rate * totalDays;
+      const rate = getEffectiveRateForMonth(w, month);
+      const earned  = rate * totalDays;
       const balance = earned - totalAdvance + totalTravel;
-      return { name: w.name, role: w.role, rate: w.rate, totalDays, earned, totalAdvance, totalTravel, balance };
+      return { name: w.name, role: w.role, rate, totalDays, earned, totalAdvance, totalTravel, balance };
     }));
     rows.sort((a, b) => a.name.localeCompare(b.name));
 
@@ -310,9 +368,10 @@ app.get('/api/report/balance-excel', auth, role('admin'), async (req, res) => {
     const workers = await User.find({ role: { $in: ['labour', 'mistry', 'half_mistry', 'manager'] }, status: { $in: ['active', 'disabled'] } }).lean();
     const rows = await Promise.all(workers.map(async w => {
       const { totalDays, totalAdvance, totalTravel } = await calcMonthStats(w._id, start, end);
-      const earned  = w.rate * totalDays;
+      const rate = getEffectiveRateForMonth(w, month);
+      const earned  = rate * totalDays;
       const balance = earned - totalAdvance + totalTravel;
-      return { name: w.name, role: w.role, rate: w.rate, totalDays, earned, totalAdvance, totalTravel, balance };
+      return { name: w.name, role: w.role, rate, totalDays, earned, totalAdvance, totalTravel, balance };
     }));
     rows.sort((a, b) => a.name.localeCompare(b.name));
 
@@ -402,7 +461,7 @@ app.get('/api/workers/inactive', auth, role('admin', 'manager'), async (req, res
     let query = { role: { $in: ['labour', 'mistry', 'half_mistry'] }, status: 'long_leave' };
     if (req.user.role === 'manager') query.createdBy = req.user._id;
     const workers = await User.find(query).lean();
-    res.json({ success: true, data: workers.map(stripPw) });
+    res.json({ success: true, data: workers.map(w => withEffectiveRate(w)) });
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
@@ -411,7 +470,7 @@ app.get('/api/workers/disabled', auth, role('admin', 'manager'), async (req, res
     let query = { role: { $in: ['labour', 'mistry', 'half_mistry'] }, status: 'disabled' };
     if (req.user.role === 'manager') query.createdBy = req.user._id;
     const workers = await User.find(query).lean();
-    res.json({ success: true, data: workers.map(stripPw) });
+    res.json({ success: true, data: workers.map(w => withEffectiveRate(w)) });
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
@@ -423,10 +482,10 @@ app.get('/api/workers/hidden', auth, role('admin', 'manager'), async (req, res) 
         status: 'active',
         hiddenForManagers: req.user._id,
       }).lean();
-      return res.json({ success: true, data: workers.map(w => ({ ...stripPw(w), isHidden: true })) });
+      return res.json({ success: true, data: workers.map(w => ({ ...withEffectiveRate(w), isHidden: true })) });
     }
     const workers = await User.find({ role: { $in: ['labour', 'mistry', 'half_mistry'] }, status: 'active', isHidden: true }).lean();
-    res.json({ success: true, data: workers.map(stripPw) });
+    res.json({ success: true, data: workers.map(w => withEffectiveRate(w)) });
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
@@ -434,7 +493,7 @@ app.get('/api/workers', auth, role('admin', 'manager'), async (req, res) => {
   try {
     let query = { role: { $in: ['labour', 'mistry', 'half_mistry'] }, status: 'active' };
     if (req.user.role === 'manager') query.createdBy = req.user._id;
-    const workers = (await User.find(query).lean()).map(stripPw);
+    const workers = (await User.find(query).lean()).map(w => withEffectiveRate(w));
     const order = { mistry: 0, labour: 1, half_mistry: 2 };
     workers.sort((a, b) => order[a.role] !== order[b.role] ? order[a.role] - order[b.role] : a.name.localeCompare(b.name));
     res.json({ success: true, data: workers });
@@ -449,8 +508,19 @@ app.post('/api/workers', auth, role('admin', 'manager'), async (req, res) => {
     const existing = await User.findOne({ mobile }).lean();
     if (existing) return res.status(400).json({ success: false, message: 'Mobile already registered' });
     const createdBy = (req.user.role === 'admin' && forManagerId) ? forManagerId : req.user._id;
-    const worker = await User.create({ name, mobile, role: workerRole, rate: Number(rate), photoUrl: photoUrl || null, password: mobile, createdBy, status: 'active' });
-    res.json({ success: true, data: stripPw(worker.toObject()) });
+    const numericRate = Number(rate);
+    const worker = await User.create({
+      name,
+      mobile,
+      role: workerRole,
+      rate: numericRate,
+      photoUrl: photoUrl || null,
+      password: mobile,
+      createdBy,
+      status: 'active',
+      rateHistory: [{ rate: numericRate, effectiveMonth: monthKeyFromDate(new Date()) }],
+    });
+    res.json({ success: true, data: withEffectiveRate(worker.toObject()) });
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
@@ -494,7 +564,8 @@ app.get('/api/workers/:id/history', auth, role('admin', 'manager'), async (req, 
     if (!month) return res.status(400).json({ success: false, message: 'month required' });
     const [year, m] = month.split('-').map(Number);
     const start = new Date(year, m - 1, 1), end = new Date(year, m, 1);
-    const worker = stripPw(await User.findById(req.params.id).lean());
+    const workerDoc = await User.findById(req.params.id).lean();
+    const worker = withEffectiveRate(workerDoc, month);
     const { attendances, advances, totalDays, totalAdvance, totalTravel } = await calcMonthStats(req.params.id, start, end);
     const earned  = worker.rate * totalDays;
     const balance = earned - totalAdvance + totalTravel;
@@ -516,15 +587,15 @@ app.get('/api/attendance/today', auth, role('admin', 'manager'), async (req, res
       const otherWorkers = await User.find({ role: { $in: ['labour', 'mistry', 'half_mistry'] }, status: 'active' }).lean();
       workers = (self ? [self, ...otherWorkers] : otherWorkers).map(w => {
         const hiddenForManagers = Array.isArray(w.hiddenForManagers) ? w.hiddenForManagers : [];
-        return { ...stripPw(w), isHidden: hiddenForManagers.includes(req.user._id) };
+        return { ...withEffectiveRate(w), isHidden: hiddenForManagers.includes(req.user._id) };
       });
     } else if (req.query.managerId) {
       const mgrId = req.query.managerId;
       const subordinates = await User.find({ role: { $in: ['labour', 'mistry', 'half_mistry'] }, status: 'active', createdBy: mgrId }).lean();
       const mgr = await User.findById(mgrId).lean();
-      workers = (mgr ? [mgr, ...subordinates] : subordinates).map(stripPw);
+      workers = (mgr ? [mgr, ...subordinates] : subordinates).map(w => withEffectiveRate(w));
     } else {
-      workers = (await User.find({ role: { $in: ['labour', 'mistry', 'half_mistry', 'manager'] }, status: 'active' }).lean()).map(stripPw);
+      workers = (await User.find({ role: { $in: ['labour', 'mistry', 'half_mistry', 'manager'] }, status: 'active' }).lean()).map(w => withEffectiveRate(w));
     }
     const ids  = workers.map(w => w._id);
     const atts = await Attendance.find({ workerId: { $in: ids }, date: { $gte: qDate, $lt: qDateEnd } }).lean();
@@ -626,7 +697,8 @@ app.get('/api/attendance/me', auth, async (req, res) => {
     const start = new Date(year, m - 1, 1), end = new Date(year, m, 1);
     const rawAtts  = await Attendance.find({ workerId: req.user._id, date: { $gte: start, $lt: end } }).sort({ date: 1 }).lean();
     const advances = await Advance.find(   { workerId: req.user._id, date: { $gte: start, $lt: end } }).sort({ date: 1 }).lean();
-    const worker   = stripPw(await User.findById(req.user._id).lean());
+    const workerDoc = await User.findById(req.user._id).lean();
+    const worker   = withEffectiveRate(workerDoc, month);
     const attendances = await Promise.all(rawAtts.map(async a => {
       const marker = a.markedBy ? await User.findById(a.markedBy).lean() : null;
       return { ...a, markedBy: marker ? { _id: marker._id, name: marker.name } : null };
