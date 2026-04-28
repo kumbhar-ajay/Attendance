@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Attendance Pro",
+    "slug": "attendance-pro",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#185FA5"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.attendancepro.app",
+      "buildNumber": "1"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#185FA5"
+      },
+      "package": "com.attendancepro.app",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "ACCESS_NETWORK_STATE",
+        "INTERNET"
+      ]
+    },
+    "plugins": [
+      "expo-image-picker"
+    ]
+  }
+}

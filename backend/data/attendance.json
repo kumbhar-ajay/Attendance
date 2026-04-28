@@ -1,0 +1,30 @@
+[
+  {
+    "_id": "cea103ef-2fab-4cc0-b88c-a8d631e66e7c",
+    "createdAt": "2026-04-14T21:24:34.631Z",
+    "updatedAt": "2026-04-14T21:24:34.631Z",
+    "workerId": "d1ff37b7-131c-476a-abd6-2fc5e794a78f",
+    "date": "2026-04-15T00:00:00.000Z",
+    "value": "1",
+    "markedBy": "00dadf6c-7787-497d-90d1-f24cb6a7293b"
+  },
+  {
+    "_id": "66d25feb-c994-49ce-8702-39a427718e41",
+    "createdAt": "2026-04-14T21:29:05.820Z",
+    "updatedAt": "2026-04-15T09:21:38.147Z",
+    "workerId": "d977bff6-8b3c-4d01-a708-20975886ad0a",
+    "date": "2026-04-15T00:00:00.000Z",
+    "value": "1",
+    "markedBy": "a4773f50-4e39-4abe-b47a-725ba4a9a543",
+    "travelExpense": 100
+  },
+  {
+    "_id": "98a9c0c8-7378-4f18-8b3d-b61eeb641a72",
+    "createdAt": "2026-04-14T21:29:11.247Z",
+    "updatedAt": "2026-04-14T21:29:11.247Z",
+    "workerId": "a4773f50-4e39-4abe-b47a-725ba4a9a543",
+    "date": "2026-04-15T00:00:00.000Z",
+    "value": "1",
+    "markedBy": "ff16c1d4-2132-41a6-97c2-e989df580e3a"
+  }
+]

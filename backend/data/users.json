@@ -1,0 +1,53 @@
+[
+  {
+    "_id": "ff16c1d4-2132-41a6-97c2-e989df580e3a",
+    "createdAt": "2026-04-14T21:25:46.396Z",
+    "updatedAt": "2026-04-14T21:25:46.396Z",
+    "name": "Admin",
+    "mobile": "9012345678",
+    "role": "admin",
+    "password": "admin123",
+    "status": "active"
+  },
+  {
+    "_id": "a4773f50-4e39-4abe-b47a-725ba4a9a543",
+    "createdAt": "2026-04-14T21:28:17.176Z",
+    "updatedAt": "2026-04-14T21:28:17.176Z",
+    "name": "Manager1",
+    "mobile": "1111111111",
+    "role": "manager",
+    "password": "1111111111",
+    "photoUrl": null,
+    "createdBy": "ff16c1d4-2132-41a6-97c2-e989df580e3a",
+    "status": "active",
+    "rate": 1000
+  },
+  {
+    "_id": "d977bff6-8b3c-4d01-a708-20975886ad0a",
+    "createdAt": "2026-04-14T21:28:45.337Z",
+    "updatedAt": "2026-04-15T03:11:04.367Z",
+    "name": "Labour1",
+    "mobile": "1222222222",
+    "role": "labour",
+    "rate": 600,
+    "photoUrl": null,
+    "password": "1222222222",
+    "createdBy": "a4773f50-4e39-4abe-b47a-725ba4a9a543",
+    "status": "active",
+    "longLeaveReason": "",
+    "disabledAt": "2026-04-15T03:10:37.886Z"
+  },
+  {
+    "_id": "8c5b0bcf-3dc5-46fd-b5b5-3b4acda0ca0b",
+    "createdAt": "2026-04-15T09:23:57.628Z",
+    "updatedAt": "2026-04-15T09:23:57.628Z",
+    "name": "Labour2",
+    "mobile": "1333333333",
+    "role": "labour",
+    "rate": 600,
+    "photoUrl": null,
+    "password": "1333333333",
+    "createdBy": "a4773f50-4e39-4abe-b47a-725ba4a9a543",
+    "status": "active"
+  }
+]

@@ -1,0 +1,112 @@
+[
+  {
+    "_id": "ac5eedcb-ed42-45c6-9406-50a7401716e4",
+    "createdAt": "2026-04-14T21:24:34.633Z",
+    "updatedAt": "2026-04-14T21:24:34.633Z",
+    "performedBy": "00dadf6c-7787-497d-90d1-f24cb6a7293b",
+    "actionType": "mark_attendance",
+    "targetUser": "d1ff37b7-131c-476a-abd6-2fc5e794a78f",
+    "previousValue": null,
+    "newValue": "cea103ef-2fab-4cc0-b88c-a8d631e66e7c",
+    "date": "2026-04-15T00:00:00.000Z"
+  },
+  {
+    "_id": "ae8effd6-52d8-4930-85ee-07eb4e3c80ac",
+    "createdAt": "2026-04-14T21:29:05.821Z",
+    "updatedAt": "2026-04-14T21:29:05.821Z",
+    "performedBy": "ff16c1d4-2132-41a6-97c2-e989df580e3a",
+    "actionType": "mark_attendance",
+    "targetUser": "d977bff6-8b3c-4d01-a708-20975886ad0a",
+    "previousValue": null,
+    "newValue": "66d25feb-c994-49ce-8702-39a427718e41",
+    "date": "2026-04-15T00:00:00.000Z"
+  },
+  {
+    "_id": "c805654a-6b2f-4ad6-9486-38089004454a",
+    "createdAt": "2026-04-14T21:29:11.248Z",
+    "updatedAt": "2026-04-14T21:29:11.248Z",
+    "performedBy": "ff16c1d4-2132-41a6-97c2-e989df580e3a",
+    "actionType": "mark_attendance",
+    "targetUser": "a4773f50-4e39-4abe-b47a-725ba4a9a543",
+    "previousValue": null,
+    "newValue": "98a9c0c8-7378-4f18-8b3d-b61eeb641a72",
+    "date": "2026-04-15T00:00:00.000Z"
+  },
+  {
+    "_id": "5b37478c-ab06-42d0-8b2c-628acfb4ee06",
+    "createdAt": "2026-04-14T21:32:19.316Z",
+    "updatedAt": "2026-04-14T21:32:19.316Z",
+    "performedBy": "a4773f50-4e39-4abe-b47a-725ba4a9a543",
+    "actionType": "mark_attendance",
+    "targetUser": "d977bff6-8b3c-4d01-a708-20975886ad0a",
+    "previousValue": "1",
+    "newValue": "66d25feb-c994-49ce-8702-39a427718e41",
+    "date": "2026-04-15T00:00:00.000Z"
+  },
+  {
+    "_id": "e17b3b2a-13ba-413a-9eca-f9008da5bfaa",
+    "createdAt": "2026-04-14T21:32:24.737Z",
+    "updatedAt": "2026-04-14T21:32:24.737Z",
+    "performedBy": "a4773f50-4e39-4abe-b47a-725ba4a9a543",
+    "actionType": "add_advance",
+    "targetUser": "d977bff6-8b3c-4d01-a708-20975886ad0a",
+    "previousValue": null,
+    "newValue": "f23a669a-c291-4d28-81b4-ac5f492ff248",
+    "date": "2026-04-14T21:32:24.737Z"
+  },
+  {
+    "_id": "bfbacfc8-93b5-4af1-b36d-d3fcff251ee6",
+    "createdAt": "2026-04-14T21:32:26.963Z",
+    "updatedAt": "2026-04-14T21:32:26.963Z",
+    "performedBy": "a4773f50-4e39-4abe-b47a-725ba4a9a543",
+    "actionType": "add_advance",
+    "targetUser": "a4773f50-4e39-4abe-b47a-725ba4a9a543",
+    "previousValue": null,
+    "newValue": "c0590947-d004-4b3c-af3f-ca337136dafb",
+    "date": "2026-04-14T21:32:26.963Z"
+  },
+  {
+    "_id": "5ece0b8b-f85b-435e-b0b7-a9291f7f9b94",
+    "createdAt": "2026-04-15T03:10:37.887Z",
+    "updatedAt": "2026-04-15T03:10:37.887Z",
+    "performedBy": "ff16c1d4-2132-41a6-97c2-e989df580e3a",
+    "actionType": "status_change",
+    "targetUser": "d977bff6-8b3c-4d01-a708-20975886ad0a",
+    "previousValue": "active",
+    "newValue": "disabled",
+    "date": "2026-04-15T03:10:37.887Z"
+  },
+  {
+    "_id": "6eccde0e-f08c-40f0-91a7-cda014e7a6fc",
+    "createdAt": "2026-04-15T03:11:04.368Z",
+    "updatedAt": "2026-04-15T03:11:04.368Z",
+    "performedBy": "ff16c1d4-2132-41a6-97c2-e989df580e3a",
+    "actionType": "status_change",
+    "targetUser": "d977bff6-8b3c-4d01-a708-20975886ad0a",
+    "previousValue": "disabled",
+    "newValue": "active",
+    "date": "2026-04-15T03:11:04.368Z"
+  },
+  {
+    "_id": "2d46e0c2-6a20-4f0a-a8c3-07fba1e5a109",
+    "createdAt": "2026-04-15T09:21:38.149Z",
+    "updatedAt": "2026-04-15T09:21:38.149Z",
+    "performedBy": "a4773f50-4e39-4abe-b47a-725ba4a9a543",
+    "actionType": "mark_attendance",
+    "targetUser": "d977bff6-8b3c-4d01-a708-20975886ad0a",
+    "previousValue": "1.5",
+    "newValue": "66d25feb-c994-49ce-8702-39a427718e41",
+    "date": "2026-04-15T00:00:00.000Z"
+  },
+  {
+    "_id": "90826cf7-adc5-4e14-b1a7-db0862bf0e52",
+    "createdAt": "2026-04-15T09:21:43.361Z",
+    "updatedAt": "2026-04-15T09:21:43.361Z",
+    "performedBy": "a4773f50-4e39-4abe-b47a-725ba4a9a543",
+    "actionType": "remove_advance",
+    "targetUser": "d977bff6-8b3c-4d01-a708-20975886ad0a",
+    "previousValue": 500,
+    "newValue": null,
+    "date": "2026-04-15T09:21:43.361Z"
+  }
+]
