@@ -1,0 +1,13 @@
+{
+  "name": "attendance-main-final",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "postinstall": "npm --prefix backend install",
+    "start": "npm --prefix backend start",
+    "dev": "npm --prefix backend run dev"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
