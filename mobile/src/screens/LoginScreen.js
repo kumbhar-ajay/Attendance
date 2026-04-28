@@ -1,6 +1,6 @@
 // FILE: mobile/src/screens/LoginScreen.js
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
 import Toast from 'react-native-toast-message';
@@ -35,35 +35,37 @@ export default function LoginScreen({ navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
-        <View style={styles.logoBox}>
-          <Text style={styles.logoText}>A</Text>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+        <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
+          <View style={styles.logoBox}>
+            <Text style={styles.logoText}>A</Text>
+          </View>
+          <Text style={styles.appName}>Attendance Pro</Text>
+          <Text style={styles.appSub}>Civil Work Manager</Text>
         </View>
-        <Text style={styles.appName}>Attendance Pro</Text>
-        <Text style={styles.appSub}>Civil Work Manager</Text>
-      </View>
-      <View style={styles.form}>
-        <Text style={styles.label}>Mobile Number</Text>
-        <TextInput
-          style={styles.input} placeholder="10-digit mobile number" placeholderTextColor="#aaa"
-          keyboardType="numeric" maxLength={10} value={mobile} onChangeText={setMobile}
-        />
-        <Text style={styles.label}>Password</Text>
-        <View style={styles.passRow}>
+        <View style={styles.form}>
+          <Text style={styles.label}>Mobile Number</Text>
           <TextInput
-            style={[styles.input, { flex: 1, marginBottom: 0 }]} placeholder="Enter password" placeholderTextColor="#aaa"
-            secureTextEntry={!showPass} value={password} onChangeText={setPassword}
+            style={styles.input} placeholder="10-digit mobile number" placeholderTextColor="#aaa"
+            keyboardType="numeric" maxLength={10} value={mobile} onChangeText={setMobile}
           />
-          <TouchableOpacity onPress={() => setShowPass(!showPass)} style={styles.eyeBtn}>
-            <Text style={{ color: COLORS.primary, fontSize: 14 }}>{showPass ? 'Hide' : 'Show'}</Text>
+          <Text style={styles.label}>Password</Text>
+          <View style={styles.passRow}>
+            <TextInput
+              style={[styles.input, { flex: 1, marginBottom: 0 }]} placeholder="Enter password" placeholderTextColor="#aaa"
+              secureTextEntry={!showPass} value={password} onChangeText={setPassword}
+            />
+            <TouchableOpacity onPress={() => setShowPass(!showPass)} style={styles.eyeBtn}>
+              <Text style={{ color: COLORS.primary, fontSize: 14 }}>{showPass ? 'Hide' : 'Show'}</Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity style={styles.btn} onPress={handleLogin} disabled={loading}>
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Login</Text>}
           </TouchableOpacity>
+          <Text style={styles.hint}>Forgot password? Contact your admin</Text>
         </View>
-        <TouchableOpacity style={styles.btn} onPress={handleLogin} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Login</Text>}
-        </TouchableOpacity>
-        <Text style={styles.hint}>Forgot password? Contact your admin</Text>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }

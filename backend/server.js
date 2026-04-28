@@ -490,10 +490,9 @@ app.get('/api/attendance/today', auth, role('admin', 'manager'), async (req, res
     const qDate    = req.query.date ? toUTCDay(req.query.date) : getToday();
     const qDateEnd = new Date(qDate.getTime() + 86400000);
     let workers;
+    // All managers see all workers (not just their own)
     if (req.user.role === 'manager') {
-      const subordinates = await User.find({ role: { $in: ['labour', 'mistry', 'half_mistry'] }, status: 'active', createdBy: req.user._id }).lean();
-      const self = await User.findById(req.user._id).lean();
-      workers = (self ? [self, ...subordinates] : subordinates).map(stripPw);
+      workers = (await User.find({ role: { $in: ['labour', 'mistry', 'half_mistry', 'manager'] }, status: 'active' }).lean()).map(stripPw);
     } else if (req.query.managerId) {
       const mgrId = req.query.managerId;
       const subordinates = await User.find({ role: { $in: ['labour', 'mistry', 'half_mistry'] }, status: 'active', createdBy: mgrId }).lean();
@@ -509,8 +508,14 @@ app.get('/api/attendance/today', auth, role('admin', 'manager'), async (req, res
     atts.forEach(a => { attMap[a.workerId] = a; });
     advs.forEach(a => { advMap[a.workerId] = (advMap[a.workerId] || 0) + a.amount; advIdMap[a.workerId] = a._id; });
     const result = workers.map(w => ({ ...w, todayAttendance: attMap[w._id] || null, todayAdvance: advMap[w._id] || 0, todayAdvanceId: advIdMap[w._id] || null }));
+    // Sort: workers with attendance marked today first, then by role, then by name
     const order = { manager: 0, mistry: 1, labour: 2, half_mistry: 3 };
-    result.sort((a, b) => ((order[a.role] ?? 9) - (order[b.role] ?? 9)) || a.name.localeCompare(b.name));
+    result.sort((a, b) => {
+      const hasAttA = !!a.todayAttendance;
+      const hasAttB = !!b.todayAttendance;
+      if (hasAttA !== hasAttB) return hasAttB ? 1 : -1; // attendance marked first
+      return ((order[a.role] ?? 9) - (order[b.role] ?? 9)) || a.name.localeCompare(b.name);
+    });
     res.json({ success: true, data: result });
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });

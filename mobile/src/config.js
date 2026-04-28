@@ -2,7 +2,7 @@
 // ⚠️ IMPORTANT: Change this to your computer's local IP when testing on a physical device
 // For Android Emulator: http://10.0.2.2:5000
 // For Physical Device: http://192.168.X.X:5000 (find your IP with `ipconfig` on Windows / `ifconfig` on Mac)
-export const API_URL = 'http://172.20.10.3:5000';
+export const API_URL = 'https://attendance-ocjf.onrender.com';
 
 export const ATT_MAP = {
   '0':    { label: 'A',   display: 'A',    color: '#E24B4A', isAbsent: true },

@@ -8,7 +8,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
 import Toast from 'react-native-toast-message';
-import { getTodayAttendance, markAttendance, addAdvance, deleteAdvance, fillAbsent, getActionLog, undoAction, updateWorkerStatus } from '../api';
+import { getTodayAttendance, markAttendance, addAdvance, deleteAdvance, fillAbsent, updateWorkerStatus } from '../api';
 import { useStore } from '../store';
 import { COLORS, ATT_MAP, QUICK_ATT, MORE_ATT, QUICK_ADV, ROLE_LABELS } from '../config';
 
@@ -45,7 +45,6 @@ export default function ManagerHome({ navigation }) {
   const [noInternet, setNoInternet] = useState(false);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
-  const [undoLogs, setUndoLogs] = useState([]);
   const [selectedWorker, setSelectedWorker] = useState(null);
   const [showMenu, setShowMenu] = useState(false);
   const [showMoreAtt, setShowMoreAtt] = useState(null);
@@ -73,9 +72,8 @@ export default function ManagerHome({ navigation }) {
     const managerId = user?.role === 'admin' && viewingManager ? viewingManager._id : undefined;
     try {
       const [wRes, logRes] = await Promise.all([getTodayAttendance(d, managerId), getActionLog()]);
-      setWorkers(wRes.data.data);
-      setUndoLogs(logRes.data.data || []);
-    } catch (e) {
+      setWorwRes = await getTodayAttendance(d, managerId);
+      setWorkers(wRes.data.data
       if (e.response?.status !== 401) Toast.show({ type: 'error', text1: 'Failed to load data' });
     } finally { setLoading(false); setRefreshing(false); }
   };
@@ -93,9 +91,7 @@ export default function ManagerHome({ navigation }) {
       const { data } = await markAttendance(worker._id, workDate, value);
       setWorkerField(worker._id, { todayAttendance: { value, _id: data.data.attId } });
       const logRes = await getActionLog();
-      setUndoLogs(logRes.data.data || []);
-      Toast.show({ type: 'success', text1: `${worker.name}: ${ATT_MAP[value]?.display}` });
-    } catch (e) {
+      catch (e) {
       Toast.show({ type: 'error', text1: 'Failed', text2: e.response?.data?.message || 'Try again' });
     } finally { setActionLoading(p => ({ ...p, [worker._id]: false })); }
   };
@@ -110,8 +106,6 @@ export default function ManagerHome({ navigation }) {
       const logRes = await getActionLog();
       setUndoLogs(logRes.data.data || []);
       Toast.show({ type: 'success', text1: `₹${amount} advance added for ${worker.name}` });
-      setShowAdvInput(null); setAdvAmount('');
-    } catch (e) {
       Toast.show({ type: 'error', text1: 'Failed', text2: e.response?.data?.message || 'Try again' });
     } finally { setAdvLoading(p => ({ ...p, [worker._id]: false })); }
   };
@@ -136,20 +130,7 @@ export default function ManagerHome({ navigation }) {
     Alert.alert('Undo Action', `Reverse: ${log.actionType.replace(/_/g,' ')} for ${log.targetUser?.name}?`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Undo', style: 'destructive', onPress: async () => {
-        try {
-          await undoAction(log._id);
-          Toast.show({ type: 'success', text1: 'Action undone' });
-          fetchData();
-        } catch (e) {
-          Toast.show({ type: 'error', text1: e.response?.data?.message || 'Undo failed' });
-        }
-      }}
-    ]);
-  };
-
-  const handleDisable = () => {
-    Alert.alert('Disable Worker', `Remove ${selectedWorker?.name} from home screen?`, [
-      { text: 'Cancel', style: 'cancel' },
+  { text: 'Cancel', style: 'cancel' },
       { text: 'Disable', style: 'destructive', onPress: async () => {
         try {
           await updateWorkerStatus(selectedWorker._id, 'disabled');
@@ -167,7 +148,7 @@ export default function ManagerHome({ navigation }) {
     else if (filter === 'Mistry') filtered = filtered.filter(w => w.role === 'mistry');
     else if (filter === 'Labour') filtered = filtered.filter(w => w.role === 'labour');
     else if (filter === 'Half Mistry') filtered = filtered.filter(w => w.role === 'half_mistry');
-    filtered.sort((a, b) => a.name.localeCompare(b.name));
+    // Backend already sorts: attendance marked first, then by role, then by name
     return filtered;
   };
 
@@ -353,15 +334,7 @@ export default function ManagerHome({ navigation }) {
       </View>
 
       {/* Search */}
-      <View style={styles.searchRow}>
-        <TextInput style={styles.searchInput} placeholder="Search worker..." placeholderTextColor="#aaa" value={search} onChangeText={setSearch} />
-      </View>
-
-      {/* Filter Tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
-        {filters.map(f => (
-          <TouchableOpacity key={f} style={[styles.filterTab, filter === f && styles.filterTabActive]} onPress={() => setFilter(f)}>
-            <Text style={[styles.filterTabText, filter === f && styles.filterTabTextActive]}>{f}</Text>
+    <Text style={[styles.filterTabText, filter === f && styles.filterTabTextActive]}>{f}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>

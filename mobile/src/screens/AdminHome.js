@@ -1,6 +1,6 @@
 // FILE: mobile/src/screens/AdminHome.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, TextInput, Alert, Platform, ScrollView } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, TextInput, Alert, Platform, ScrollView, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
@@ -34,6 +34,8 @@ export default function AdminHome({ navigation }) {
   );
 
   useEffect(() => { fetchAll(); }, [month]);
+
+  const onRefresh = useCallback(() => { fetchAll(); }, [month]);
 
   const fetchManagers = async () => {
     try {
@@ -110,7 +112,7 @@ export default function AdminHome({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
+      <ScrollView contentContainerStyle={{ padding: 16 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         {/* Stats */}
         <View style={styles.statsRow}>
           <View style={styles.statCard}><Text style={styles.statVal}>{managers.length}</Text><Text style={styles.statLabel}>Managers</Text></View>
@@ -179,16 +181,21 @@ export default function AdminHome({ navigation }) {
       {/* Create Manager Modal */}
       <Modal visible={showCreateMgr} transparent animationType="slide" onRequestClose={() => setShowCreateMgr(false)}>
         <TouchableOpacity style={styles.overlay} onPress={() => setShowCreateMgr(false)} />
-        <View style={styles.sheet}>
-          <Text style={styles.sheetTitle}>Create Manager</Text>
-          <TextInput style={styles.input} placeholder="Full Name" value={mgrName} onChangeText={setMgrName} />
-          <TextInput style={styles.input} placeholder="Mobile Number (10 digits)" keyboardType="numeric" maxLength={10} value={mgrMobile} onChangeText={setMgrMobile} />
-          <TextInput style={styles.input} placeholder="Daily Rate (₹)" keyboardType="numeric" value={mgrRate} onChangeText={setMgrRate} />
-          <Text style={{ fontSize: 13, color: COLORS.textSecondary, marginBottom: 12 }}>Default password will be mobile number</Text>
-          <TouchableOpacity style={styles.submitBtn} onPress={handleCreateMgr} disabled={creating}>
-            {creating ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitBtnText}>Create Manager</Text>}
-          </TouchableOpacity>
-        </View>
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+          <View style={styles.sheet}>
+            <Text style={styles.sheetTitle}>Create Manager</Text>
+            <Text style={styles.formLabel}>Full Name</Text>
+            <TextInput style={styles.input} placeholder="Enter manager name" value={mgrName} onChangeText={setMgrName} />
+            <Text style={styles.formLabel}>Mobile Number</Text>
+            <TextInput style={styles.input} placeholder="10-digit mobile" keyboardType="numeric" maxLength={10} value={mgrMobile} onChangeText={setMgrMobile} />
+            <Text style={styles.formLabel}>Daily Rate (₹)</Text>
+            <TextInput style={styles.input} placeholder="Daily rate" keyboardType="numeric" value={mgrRate} onChangeText={setMgrRate} />
+            <Text style={{ fontSize: 13, color: COLORS.textSecondary, marginBottom: 12 }}>Default password will be mobile number</Text>
+            <TouchableOpacity style={styles.submitBtn} onPress={handleCreateMgr} disabled={creating}>
+              {creating ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitBtnText}>Create Manager</Text>}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       </Modal>
 
       {/* Manager Menu */}
@@ -272,6 +279,7 @@ const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
   sheet: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, paddingBottom: 36 },
   sheetTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 16 },
+  formLabel: { fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 6, marginTop: 12 },
   input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 13, fontSize: 15, marginBottom: 12 },
   submitBtn: { backgroundColor: COLORS.primary, borderRadius: 10, padding: 14, alignItems: 'center' },
   submitBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
