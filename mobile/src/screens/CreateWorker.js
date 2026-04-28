@@ -1,6 +1,7 @@
 // FILE: mobile/src/screens/CreateWorker.js
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Platform, Image, Alert, KeyboardAvoidingView } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import Toast from 'react-native-toast-message';
@@ -28,6 +29,21 @@ export default function CreateWorker({ navigation, route }) {
   const [photoUrl, setPhotoUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const [creating, setCreating] = useState(false);
+
+  const resetForm = useCallback(() => {
+    setName('');
+    setMobile('');
+    setRole('');
+    setRate('');
+    setPhoto(null);
+    setPhotoUrl('');
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      resetForm();
+    }, [resetForm])
+  );
 
   const pickImage = async (fromCamera) => {
     const perm = fromCamera
@@ -62,6 +78,7 @@ export default function CreateWorker({ navigation, route }) {
     try {
       await createWorker({ name: name.trim(), mobile: mobile.trim(), role, rate: Number(rate), photoUrl, ...(forManagerId ? { forManagerId } : {}) });
       Toast.show({ type: 'success', text1: `${name} created!`, text2: `Default password: ${mobile}` });
+      resetForm();
       navigation.goBack();
     } catch (e) {
       Toast.show({ type: 'error', text1: e.response?.data?.message || 'Failed to create worker' });

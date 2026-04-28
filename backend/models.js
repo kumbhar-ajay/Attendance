@@ -14,6 +14,7 @@ const userSchema = new mongoose.Schema({
   photoUrl:        { type: String, default: null },
   createdBy:       { type: String, default: null },
   isHidden:        { type: Boolean, default: false },
+  hiddenForManagers:{ type: [String], default: [] },
   disabledAt:      { type: String, default: null },
   longLeaveReason: { type: String, default: '' },
 }, { timestamps: true });

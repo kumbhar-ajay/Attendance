@@ -417,9 +417,15 @@ app.get('/api/workers/disabled', auth, role('admin', 'manager'), async (req, res
 
 app.get('/api/workers/hidden', auth, role('admin', 'manager'), async (req, res) => {
   try {
-    let query = { role: { $in: ['labour', 'mistry', 'half_mistry'] }, status: 'active', isHidden: true };
-    if (req.user.role === 'manager') query.createdBy = req.user._id;
-    const workers = await User.find(query).lean();
+    if (req.user.role === 'manager') {
+      const workers = await User.find({
+        role: { $in: ['labour', 'mistry', 'half_mistry'] },
+        status: 'active',
+        hiddenForManagers: req.user._id,
+      }).lean();
+      return res.json({ success: true, data: workers.map(w => ({ ...stripPw(w), isHidden: true })) });
+    }
+    const workers = await User.find({ role: { $in: ['labour', 'mistry', 'half_mistry'] }, status: 'active', isHidden: true }).lean();
     res.json({ success: true, data: workers.map(stripPw) });
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
@@ -465,6 +471,18 @@ app.put('/api/workers/:id/toggle-hidden', auth, role('admin', 'manager'), async 
   try {
     const worker = await User.findById(req.params.id).lean();
     if (!worker) return res.status(404).json({ success: false, message: 'Worker not found' });
+    if (req.user.role === 'manager') {
+      if (worker.role === 'manager' || worker.role === 'admin') {
+        return res.status(400).json({ success: false, message: 'Managers cannot hide manager accounts' });
+      }
+      const hiddenForManagers = Array.isArray(worker.hiddenForManagers) ? worker.hiddenForManagers : [];
+      const isHiddenForManager = hiddenForManagers.includes(req.user._id);
+      const nextHiddenForManagers = isHiddenForManager
+        ? hiddenForManagers.filter(id => id !== req.user._id)
+        : [...hiddenForManagers, req.user._id];
+      await User.findByIdAndUpdate(req.params.id, { $set: { hiddenForManagers: nextHiddenForManagers } });
+      return res.json({ success: true, isHidden: !isHiddenForManager });
+    }
     await User.findByIdAndUpdate(req.params.id, { $set: { isHidden: !worker.isHidden } });
     res.json({ success: true, isHidden: !worker.isHidden });
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
@@ -490,9 +508,13 @@ app.get('/api/attendance/today', auth, role('admin', 'manager'), async (req, res
     const qDate    = req.query.date ? toUTCDay(req.query.date) : getToday();
     const qDateEnd = new Date(qDate.getTime() + 86400000);
     let workers;
-    // All managers see all workers (not just their own)
     if (req.user.role === 'manager') {
-      workers = (await User.find({ role: { $in: ['labour', 'mistry', 'half_mistry', 'manager'] }, status: 'active' }).lean()).map(stripPw);
+      const self = await User.findById(req.user._id).lean();
+      const otherWorkers = await User.find({ role: { $in: ['labour', 'mistry', 'half_mistry'] }, status: 'active' }).lean();
+      workers = (self ? [self, ...otherWorkers] : otherWorkers).map(w => {
+        const hiddenForManagers = Array.isArray(w.hiddenForManagers) ? w.hiddenForManagers : [];
+        return { ...stripPw(w), isHidden: hiddenForManagers.includes(req.user._id) };
+      });
     } else if (req.query.managerId) {
       const mgrId = req.query.managerId;
       const subordinates = await User.find({ role: { $in: ['labour', 'mistry', 'half_mistry'] }, status: 'active', createdBy: mgrId }).lean();
@@ -508,12 +530,13 @@ app.get('/api/attendance/today', auth, role('admin', 'manager'), async (req, res
     atts.forEach(a => { attMap[a.workerId] = a; });
     advs.forEach(a => { advMap[a.workerId] = (advMap[a.workerId] || 0) + a.amount; advIdMap[a.workerId] = a._id; });
     const result = workers.map(w => ({ ...w, todayAttendance: attMap[w._id] || null, todayAdvance: advMap[w._id] || 0, todayAdvanceId: advIdMap[w._id] || null }));
-    // Sort priority:
-    // 1) Attendance marked today first.
-    // 2) For managers, workers they created appear before others.
-    // 3) Role order, then name.
     const order = { manager: 0, mistry: 1, labour: 2, half_mistry: 3 };
     result.sort((a, b) => {
+      if (req.user.role === 'manager') {
+        const isSelfA = a._id === req.user._id ? 1 : 0;
+        const isSelfB = b._id === req.user._id ? 1 : 0;
+        if (isSelfA !== isSelfB) return isSelfB - isSelfA;
+      }
       const hasAttA = !!a.todayAttendance;
       const hasAttB = !!b.todayAttendance;
       if (hasAttA !== hasAttB) return hasAttB ? 1 : -1; // attendance marked first

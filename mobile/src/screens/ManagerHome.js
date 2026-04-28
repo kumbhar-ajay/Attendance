@@ -181,7 +181,9 @@ export default function ManagerHome({ navigation }) {
           <Avatar name={w.name} />
           <View style={{ flex: 1, marginLeft: 10 }}>
             <Text style={styles.workerName}>{w.name}</Text>
-            <Text style={styles.workerSub}>{ROLE_LABELS[w.role]} · ₹{w.rate}/day</Text>
+            <Text style={styles.workerSub}>
+              {user?.role === 'manager' ? ROLE_LABELS[w.role] : `${ROLE_LABELS[w.role]} · ₹${w.rate}/day`}
+            </Text>
           </View>
           {isMarked && <AttBadge value={currentAtt} />}
           <TouchableOpacity onPress={() => { setSelectedWorker(w); setShowMenu(true); }} style={styles.moreBtn}>
@@ -388,14 +390,16 @@ export default function ManagerHome({ navigation }) {
           <View style={styles.bottomSheet}>
             <View style={styles.sheetHandle} />
             <Text style={styles.sheetTitle}>{selectedWorker?.name}</Text>
-            <Text style={styles.sheetSub}>{ROLE_LABELS[selectedWorker?.role]} · ₹{selectedWorker?.rate}/day</Text>
+            <Text style={styles.sheetSub}>
+              {user?.role === 'manager' ? ROLE_LABELS[selectedWorker?.role] : `${ROLE_LABELS[selectedWorker?.role]} · ₹${selectedWorker?.rate}/day`}
+            </Text>
             {[
               { label: 'View Month History', icon: '📅', action: () => { setShowMenu(false); navigation.navigate('MonthHistory', { worker: selectedWorker }); } },
               { label: 'Edit Previous Attendance', icon: '✏️', action: () => { setShowMenu(false); navigation.navigate('MonthHistory', { worker: selectedWorker, editMode: true }); } },
-              { label: selectedWorker?.isHidden ? 'Show on Home' : 'Hide from Home', icon: '👁', action: async () => {
+              ...((user?.role === 'manager' && selectedWorker?.role === 'manager') ? [] : [{ label: selectedWorker?.isHidden ? 'Show on Home' : 'Hide from Home', icon: '👁', action: async () => {
                 try { await require('../api').toggleHideWorker(selectedWorker._id); Toast.show({ type: 'success', text1: 'Done' }); setShowMenu(false); fetchData(); }
                 catch { Toast.show({ type: 'error', text1: 'Failed' }); }
-              }},
+              }}]),
               ...(user?.role === 'admin' ? [{ label: 'Disable Worker', icon: '🚫', color: COLORS.red, action: handleDisable }] : []),
             ].map((item, i) => (
               <TouchableOpacity key={i} style={styles.sheetItem} onPress={item.action}>

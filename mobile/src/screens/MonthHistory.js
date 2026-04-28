@@ -13,7 +13,7 @@ const fmtDate = (d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric',
 export default function MonthHistory({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const { worker, editMode } = route.params || {};
-  const { testMode, testDate } = useStore();
+  const { testMode, testDate, user } = useStore();
   const effectiveToday = testMode && testDate ? new Date(testDate + 'T12:00:00') : new Date();
   const [month, setMonth] = useState(currMonth(testMode && testDate ? testDate : null));
   const [data, setData] = useState(null);
@@ -140,7 +140,9 @@ export default function MonthHistory({ navigation, route }) {
 
               {/* Balance Card */}
               <View style={styles.balanceCard}>
-                <View style={styles.balRow}><Text style={styles.balLabel}>Rate</Text><Text style={styles.balVal}>₹{data.worker?.rate}/day</Text></View>
+                {user?.role !== 'manager' && (
+                  <View style={styles.balRow}><Text style={styles.balLabel}>Rate</Text><Text style={styles.balVal}>₹{data.worker?.rate}/day</Text></View>
+                )}
                 <View style={styles.balRow}><Text style={styles.balLabel}>Earned</Text><Text style={styles.balVal}>₹{data.earned?.toFixed(0)}</Text></View>
                 <View style={styles.balRow}><Text style={styles.balLabel}>Advance Paid</Text><Text style={[styles.balVal, { color: COLORS.red }]}>- ₹{data.totalAdvance}</Text></View>
                 <View style={styles.balRow}><Text style={styles.balLabel}>Travel Expense</Text><Text style={[styles.balVal, { color: COLORS.green }]}>+ ₹{data.totalTravel}</Text></View>
@@ -148,7 +150,7 @@ export default function MonthHistory({ navigation, route }) {
                   <Text style={styles.balTotalLabel}>Balance</Text>
                   <Text style={[styles.balTotalVal, { color: data.balance >= 0 ? COLORS.green : COLORS.red }]}>₹{data.balance?.toFixed(0)}</Text>
                 </View>
-                <Text style={styles.formula}>Formula: Rate × Days − Advance + Travel</Text>
+                {user?.role !== 'manager' && <Text style={styles.formula}>Formula: Rate × Days − Advance + Travel</Text>}
               </View>
 
               {/* Month Nav */}
