@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput,
-  Modal, ScrollView, ActivityIndicator, Alert, RefreshControl, Platform
+  Modal, ScrollView, ActivityIndicator, Alert, RefreshControl, Platform, KeyboardAvoidingView
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -52,6 +52,7 @@ export default function ManagerHome({ navigation }) {
   const [advAmount, setAdvAmount] = useState('');
   const [actionLoading, setActionLoading] = useState({});
   const [advLoading, setAdvLoading] = useState({});
+  const listRef = useRef(null);
 
   useEffect(() => {
     const netUnsub = NetInfo.addEventListener(state => {
@@ -71,14 +72,28 @@ export default function ManagerHome({ navigation }) {
     const d = date || workDate;
     const managerId = user?.role === 'admin' && viewingManager ? viewingManager._id : undefined;
     try {
-      const [wRes, logRes] = await Promise.all([getTodayAttendance(d, managerId), getActionLog()]);
-      setWorwRes = await getTodayAttendance(d, managerId);
-      setWorkers(wRes.data.data
+      const wRes = await getTodayAttendance(d, managerId);
+      setWorkers(wRes.data.data);
+    } catch (e) {
       if (e.response?.status !== 401) Toast.show({ type: 'error', text1: 'Failed to load data' });
     } finally { setLoading(false); setRefreshing(false); }
   };
 
   const onRefresh = () => { setRefreshing(true); fetchData(workDate); };
+
+  const openAdvanceInput = (workerId, index) => {
+    setShowAdvInput(workerId);
+    setAdvAmount('');
+    setTimeout(() => {
+      if (listRef.current) {
+        try {
+          listRef.current.scrollToIndex({ index, animated: true, viewPosition: 0.85 });
+        } catch (_) {
+          listRef.current.scrollToEnd({ animated: true });
+        }
+      }
+    }, 180);
+  };
 
   const setWorkerField = (workerId, updates) => {
     setWorkers(prev => prev.map(w => w._id === workerId ? { ...w, ...updates } : w));
@@ -90,8 +105,8 @@ export default function ManagerHome({ navigation }) {
     try {
       const { data } = await markAttendance(worker._id, workDate, value);
       setWorkerField(worker._id, { todayAttendance: { value, _id: data.data.attId } });
-      const logRes = await getActionLog();
-      catch (e) {
+      Toast.show({ type: 'success', text1: `${worker.name}: ${ATT_MAP[value]?.display}` });
+    } catch (e) {
       Toast.show({ type: 'error', text1: 'Failed', text2: e.response?.data?.message || 'Try again' });
     } finally { setActionLoading(p => ({ ...p, [worker._id]: false })); }
   };
@@ -103,9 +118,9 @@ export default function ManagerHome({ navigation }) {
     try {
       const res = await addAdvance(worker._id, Number(amount), workDate);
       setWorkerField(worker._id, { todayAdvance: Number(amount), todayAdvanceId: res.data.data._id });
-      const logRes = await getActionLog();
-      setUndoLogs(logRes.data.data || []);
       Toast.show({ type: 'success', text1: `₹${amount} advance added for ${worker.name}` });
+      setShowAdvInput(null); setAdvAmount('');
+    } catch (e) {
       Toast.show({ type: 'error', text1: 'Failed', text2: e.response?.data?.message || 'Try again' });
     } finally { setAdvLoading(p => ({ ...p, [worker._id]: false })); }
   };
@@ -126,11 +141,9 @@ export default function ManagerHome({ navigation }) {
     ]);
   };
 
-  const handleUndo = async (log) => {
-    Alert.alert('Undo Action', `Reverse: ${log.actionType.replace(/_/g,' ')} for ${log.targetUser?.name}?`, [
+  const handleDisable = () => {
+    Alert.alert('Disable Worker', `Remove ${selectedWorker?.name} from home screen?`, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Undo', style: 'destructive', onPress: async () => {
-  { text: 'Cancel', style: 'cancel' },
       { text: 'Disable', style: 'destructive', onPress: async () => {
         try {
           await updateWorkerStatus(selectedWorker._id, 'disabled');
@@ -148,7 +161,7 @@ export default function ManagerHome({ navigation }) {
     else if (filter === 'Mistry') filtered = filtered.filter(w => w.role === 'mistry');
     else if (filter === 'Labour') filtered = filtered.filter(w => w.role === 'labour');
     else if (filter === 'Half Mistry') filtered = filtered.filter(w => w.role === 'half_mistry');
-    // Backend already sorts: attendance marked first, then by role, then by name
+    // Backend already sorts: attendance marked first, then by role, then by name.
     return filtered;
   };
 
@@ -218,7 +231,7 @@ export default function ManagerHome({ navigation }) {
                   <Text style={styles.advBtnText}>₹{amt}</Text>
                 </TouchableOpacity>
               ))}
-              <TouchableOpacity style={styles.advBtn} onPress={() => { setShowAdvInput(w._id); setAdvAmount(''); }} disabled={!!advLoading[w._id]}>
+              <TouchableOpacity style={styles.advBtn} onPress={() => openAdvanceInput(w._id, index)} disabled={!!advLoading[w._id]}>
                 <Text style={styles.advBtnText}>+</Text>
               </TouchableOpacity>
             </>
@@ -276,7 +289,11 @@ export default function ManagerHome({ navigation }) {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => navigation.openDrawer()} style={styles.hamburger}>
@@ -317,16 +334,6 @@ export default function ManagerHome({ navigation }) {
         </View>
       )}
 
-      {/* Undo Bar */}
-      {undoLogs.length > 0 && (
-        <TouchableOpacity style={styles.undoBar} onPress={() => handleUndo(undoLogs[0])}>
-          <Text style={styles.undoText} numberOfLines={1}>
-            {undoLogs[0].targetUser?.name}: {undoLogs[0].actionType.replace(/_/g,' ')} — Tap to Undo
-          </Text>
-          <Text style={styles.undoBtn}>Undo</Text>
-        </TouchableOpacity>
-      )}
-
       {/* Summary */}
       <View style={styles.summaryBar}>
         <Text style={styles.summaryText}>Marked: {marked} / {total}</Text>
@@ -334,7 +341,15 @@ export default function ManagerHome({ navigation }) {
       </View>
 
       {/* Search */}
-    <Text style={[styles.filterTabText, filter === f && styles.filterTabTextActive]}>{f}</Text>
+      <View style={styles.searchRow}>
+        <TextInput style={styles.searchInput} placeholder="Search worker..." placeholderTextColor="#aaa" value={search} onChangeText={setSearch} />
+      </View>
+
+      {/* Filter Tabs */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+        {filters.map(f => (
+          <TouchableOpacity key={f} style={[styles.filterTab, filter === f && styles.filterTabActive]} onPress={() => setFilter(f)}>
+            <Text style={[styles.filterTabText, filter === f && styles.filterTabTextActive]}>{f}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -355,10 +370,14 @@ export default function ManagerHome({ navigation }) {
         </View>
       ) : (
         <FlatList
+          ref={listRef}
           data={filtered}
           keyExtractor={item => item._id}
           renderItem={renderWorker}
           contentContainerStyle={{ paddingBottom: 20, paddingHorizontal: 12 }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          onScrollToIndexFailed={() => listRef.current?.scrollToEnd({ animated: true })}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
         />
       )}
@@ -390,7 +409,7 @@ export default function ManagerHome({ navigation }) {
           </View>
         </TouchableOpacity>
       </Modal>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -408,9 +427,6 @@ const styles = StyleSheet.create({
   viewingBannerBack: { fontSize: 13, color: COLORS.primary, fontWeight: '700' },
   testBannerText: { fontSize: 13, color: '#5D4037', fontWeight: '500' },
   testBannerBtn: { fontSize: 13, color: COLORS.primary, fontWeight: '700' },
-  undoBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#E8F5E9', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#C8E6C9' },
-  undoText: { flex: 1, fontSize: 13, color: '#5D4037' },
-  undoBtn: { color: COLORS.primary, fontWeight: '700', fontSize: 14, marginLeft: 8 },
   summaryBar: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: COLORS.border },
   summaryText: { color: COLORS.green, fontWeight: '600', fontSize: 14 },
   summaryPending: { color: COLORS.red, fontWeight: '600', fontSize: 14 },

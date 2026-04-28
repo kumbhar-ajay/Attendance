@@ -1,6 +1,6 @@
 // FILE: mobile/src/screens/CreateWorker.js
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Platform, Image, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Platform, Image, Alert, KeyboardAvoidingView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import Toast from 'react-native-toast-message';
@@ -69,7 +69,11 @@ export default function CreateWorker({ navigation, route }) {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={styles.backBtnText}>‹ Back</Text>
@@ -77,7 +81,11 @@ export default function CreateWorker({ navigation, route }) {
         <Text style={styles.headerTitle}>{managerName ? `Add Worker for ${managerName}` : 'Add New Worker'}</Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 20 }} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={{ padding: 20, paddingBottom: Math.max(insets.bottom + 24, 36) }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+      >
         {/* Photo */}
         <View style={styles.photoSection}>
           {photo ? (
@@ -125,7 +133,7 @@ export default function CreateWorker({ navigation, route }) {
           {creating ? <ActivityIndicator color="#fff" /> : <Text style={styles.createBtnText}>Create Worker</Text>}
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

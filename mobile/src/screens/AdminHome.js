@@ -15,6 +15,7 @@ export default function AdminHome({ navigation }) {
   const { user, logout, setViewingManager } = useStore();
   const [managers, setManagers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [report, setReport] = useState([]);
   const [balance, setBalance] = useState(null);
   const [month, setMonth] = useState(currMonth());
@@ -35,7 +36,10 @@ export default function AdminHome({ navigation }) {
 
   useEffect(() => { fetchAll(); }, [month]);
 
-  const onRefresh = useCallback(() => { fetchAll(); }, [month]);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchAll();
+  }, [month]);
 
   const fetchManagers = async () => {
     try {
@@ -61,6 +65,7 @@ export default function AdminHome({ navigation }) {
       setBalance(bRes.data.data);
     } catch (e) { /* balance errors are non-critical */ }
     setLoading(false);
+    setRefreshing(false);
   };
 
   const handleCreateMgr = async () => {

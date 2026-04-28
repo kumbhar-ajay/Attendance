@@ -508,12 +508,20 @@ app.get('/api/attendance/today', auth, role('admin', 'manager'), async (req, res
     atts.forEach(a => { attMap[a.workerId] = a; });
     advs.forEach(a => { advMap[a.workerId] = (advMap[a.workerId] || 0) + a.amount; advIdMap[a.workerId] = a._id; });
     const result = workers.map(w => ({ ...w, todayAttendance: attMap[w._id] || null, todayAdvance: advMap[w._id] || 0, todayAdvanceId: advIdMap[w._id] || null }));
-    // Sort: workers with attendance marked today first, then by role, then by name
+    // Sort priority:
+    // 1) Attendance marked today first.
+    // 2) For managers, workers they created appear before others.
+    // 3) Role order, then name.
     const order = { manager: 0, mistry: 1, labour: 2, half_mistry: 3 };
     result.sort((a, b) => {
       const hasAttA = !!a.todayAttendance;
       const hasAttB = !!b.todayAttendance;
       if (hasAttA !== hasAttB) return hasAttB ? 1 : -1; // attendance marked first
+      if (req.user.role === 'manager') {
+        const ownA = a.createdBy === req.user._id ? 1 : 0;
+        const ownB = b.createdBy === req.user._id ? 1 : 0;
+        if (ownA !== ownB) return ownB - ownA;
+      }
       return ((order[a.role] ?? 9) - (order[b.role] ?? 9)) || a.name.localeCompare(b.name);
     });
     res.json({ success: true, data: result });
