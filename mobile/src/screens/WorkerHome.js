@@ -1,6 +1,6 @@
 // FILE: mobile/src/screens/WorkerHome.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, ActivityIndicator, Platform, RefreshControl, Alert, Switch } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, ActivityIndicator, Platform, RefreshControl, Alert, Switch, Modal, KeyboardAvoidingView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
 import Toast from 'react-native-toast-message';
@@ -263,9 +263,13 @@ export default function WorkerHome({ navigation }) {
       )}
 
       {/* Travel Edit Modal */}
-      {showTravelEditModal && (
-        <View style={StyleSheet.absoluteFill}>
-          <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }} onPress={() => setShowTravelEditModal(false)} />
+      <Modal visible={showTravelEditModal} transparent animationType="slide" onRequestClose={() => setShowTravelEditModal(false)}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 20}
+        >
+          <TouchableOpacity style={styles.modalBackdrop} onPress={() => setShowTravelEditModal(false)} />
           <View style={styles.passModal}>
             <Text style={{ fontSize: 16, fontWeight: '700', marginBottom: 4 }}>Edit Travel Expense</Text>
             <Text style={{ fontSize: 12, color: COLORS.textSecondary, marginBottom: 14 }}>{editTravelDate ? new Date(editTravelDate + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'long' }) : ''}</Text>
@@ -277,28 +281,35 @@ export default function WorkerHome({ navigation }) {
               {savingTravelEdit ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.saveBtnText}>Save</Text>}
             </TouchableOpacity>
           </View>
-        </View>
-      )}
+        </KeyboardAvoidingView>
+      </Modal>
 
       {/* Change Password Modal */}
-      {showPassModal && (
-        <View style={StyleSheet.absoluteFill}>
-          <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }} onPress={() => setShowPassModal(false)} />
+      <Modal visible={showPassModal} transparent animationType="slide" onRequestClose={() => setShowPassModal(false)}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 20}
+        >
+          <TouchableOpacity style={styles.modalBackdrop} onPress={() => setShowPassModal(false)} />
           <View style={styles.passModal}>
             <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 16 }}>Change Password</Text>
             {[
-              { placeholder: 'Current password', val: curPass, set: setCurPass },
-              { placeholder: 'New password (min 6)', val: newPass, set: setNewPass },
-              { placeholder: 'Confirm new password', val: confirmPass, set: setConfirmPass },
+              { label: 'Current Password', placeholder: 'Current password', val: curPass, set: setCurPass },
+              { label: 'New Password', placeholder: 'New password (min 6)', val: newPass, set: setNewPass },
+              { label: 'Confirm New Password', placeholder: 'Confirm new password', val: confirmPass, set: setConfirmPass },
             ].map((f, i) => (
-              <TextInput key={i} style={styles.passInput} placeholder={f.placeholder} secureTextEntry value={f.val} onChangeText={f.set} />
+              <View key={i}>
+                <Text style={styles.passLabel}>{f.label}</Text>
+                <TextInput style={styles.passInput} placeholder={f.placeholder} value={f.val} onChangeText={f.set} />
+              </View>
             ))}
             <TouchableOpacity style={styles.saveBtn} onPress={handleChangePassword}>
               <Text style={styles.saveBtnText}>Update Password</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      )}
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -335,7 +346,10 @@ const styles = StyleSheet.create({
   tableCell: { flex: 1, fontSize: 13, color: COLORS.textPrimary },
   tableHeaderText: { fontWeight: '700', color: COLORS.textSecondary, fontSize: 12 },
   tableSumRow: { backgroundColor: '#EEF4FF', borderTopWidth: 1, borderTopColor: COLORS.border },
+  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
+  modalBackdrop: { ...StyleSheet.absoluteFillObject },
   passModal: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24 },
+  passLabel: { fontSize: 13, fontWeight: '600', color: COLORS.textPrimary, marginBottom: 6 },
   passInput: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 12, fontSize: 15, marginBottom: 12 },
   testModeCard: { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: COLORS.border },
   testModeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

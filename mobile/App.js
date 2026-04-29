@@ -1,4 +1,5 @@
 // FILE: mobile/App.js
+import * as Updates from 'expo-updates'; // added my ajay
 import 'react-native-gesture-handler';
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
@@ -21,6 +22,32 @@ import CreateManager from './src/screens/CreateManager';
 import DisabledWorkers from './src/screens/DisabledWorkers';
 import BalancePayment from './src/screens/BalancePayment';
 import { COLORS } from './src/config';
+
+
+import { Alert } from 'react-native';
+// Add this function
+async function checkForUpdates() {
+  try {
+    const update = await Updates.checkForUpdateAsync();
+    if (update.isAvailable) {
+      await Updates.fetchUpdateAsync();
+      Alert.alert(
+        'App Updated! ✅',
+        'A new update has been applied. The app will restart now.',
+        [
+          {
+            text: 'OK',
+            onPress: async () => await Updates.reloadAsync()
+          }
+        ]
+      );
+    }
+  } catch (error) {
+    // silently ignore — no internet or update server issue
+    console.log('Update check failed:', error);
+  }
+}
+//added by ajay
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -55,7 +82,7 @@ function AdminDrawer() {
 export default function App() {
   const { user, isLoading, loadSession } = useStore();
 
-  useEffect(() => { loadSession(); }, []);
+  useEffect(() => { loadSession(); checkForUpdates(); }, []); // added by ajay
 
   if (isLoading) {
     return (
