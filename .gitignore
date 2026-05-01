@@ -4,6 +4,12 @@ node_modules/
 npm-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+.expo/
+
+
+
+android/
+ios/
 
 
 # Mac
