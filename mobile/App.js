@@ -1,11 +1,10 @@
-// FILE: mobile/App.js
-import * as Updates from 'expo-updates'; // added my ajay
+import * as Updates from 'expo-updates';
 import 'react-native-gesture-handler';
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, Alert } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
@@ -21,19 +20,20 @@ import HiddenWorkers from './src/screens/HiddenWorkers';
 import CreateManager from './src/screens/CreateManager';
 import DisabledWorkers from './src/screens/DisabledWorkers';
 import BalancePayment from './src/screens/BalancePayment';
-import { COLORS } from './src/config';
+import { COLORS, API_URL } from './src/config';
 
-
-import { Alert } from 'react-native';
-// Add this function
+// ─── OTA Update Check ────────────────────────────────────────────
 async function checkForUpdates() {
+  // Updates.checkForUpdateAsync() throws in dev mode — skip it
+  if (__DEV__) return;
+
   try {
     const update = await Updates.checkForUpdateAsync();
     if (update.isAvailable) {
       await Updates.fetchUpdateAsync();
       Alert.alert(
         'App Updated! ✅',
-        'A new update has been applied. The app will restart now.',
+        'A new update is ready. The app will restart now.',
         [
           {
             text: 'OK',
@@ -43,18 +43,29 @@ async function checkForUpdates() {
       );
     }
   } catch (error) {
-    // silently ignore — no internet or update server issue
-    console.log('Update check failed:', error);
+    // silently ignore — handles no internet or cold server
+    console.log('Update check skipped:', error.message);
   }
 }
-//added by ajay
+
+// ─── Server Pre-warm ─────────────────────────────────────────────
+// Pings server the moment app opens so it's warm by login time
+function preWarmServer() {
+  fetch(`${API_URL}/api/health`)
+    .then(() => console.log('Server is warm ✅'))
+    .catch(() => console.log('Server warming up...'));
+}
+// ─────────────────────────────────────────────────────────────────
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
 
 function ManagerDrawer() {
   return (
-    <Drawer.Navigator drawerContent={(props) => <DrawerContent {...props} />} screenOptions={{ headerShown: false, drawerStyle: { width: 280 } }}>
+    <Drawer.Navigator
+      drawerContent={(props) => <DrawerContent {...props} />}
+      screenOptions={{ headerShown: false, drawerStyle: { width: 280 } }}
+    >
       <Drawer.Screen name="ManagerHome" component={ManagerHome} />
       <Drawer.Screen name="CreateWorker" component={CreateWorker} />
       <Drawer.Screen name="MonthHistory" component={MonthHistory} />
@@ -66,7 +77,10 @@ function ManagerDrawer() {
 
 function AdminDrawer() {
   return (
-    <Drawer.Navigator drawerContent={(props) => <DrawerContent {...props} />} screenOptions={{ headerShown: false, drawerStyle: { width: 280 } }}>
+    <Drawer.Navigator
+      drawerContent={(props) => <DrawerContent {...props} />}
+      screenOptions={{ headerShown: false, drawerStyle: { width: 280 } }}
+    >
       <Drawer.Screen name="AdminHome" component={AdminHome} />
       <Drawer.Screen name="CreateWorker" component={CreateWorker} />
       <Drawer.Screen name="CreateManager" component={CreateManager} />
@@ -82,7 +96,11 @@ function AdminDrawer() {
 export default function App() {
   const { user, isLoading, loadSession } = useStore();
 
-  useEffect(() => { loadSession(); checkForUpdates(); }, []); // added by ajay
+  useEffect(() => {
+    loadSession();      // restore saved login session
+    preWarmServer();    // ping server immediately so it wakes up
+    checkForUpdates();  // check for OTA update in background
+  }, []);
 
   if (isLoading) {
     return (
