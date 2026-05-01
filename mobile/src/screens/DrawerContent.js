@@ -1,6 +1,6 @@
 // FILE: mobile/src/screens/DrawerContent.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Switch } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getInactiveWorkers, updateWorkerStatus } from '../api';
 import { useStore } from '../store';
@@ -9,7 +9,7 @@ import Toast from 'react-native-toast-message';
 
 export default function DrawerContent({ navigation }) {
   const insets = useSafeAreaInsets();
-  const { user, logout, testMode, setTestMode, testDate, changeTestDate, viewingManager } = useStore();
+  const { user, logout, viewingManager } = useStore();
   const [inactiveWorkers, setInactiveWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -87,34 +87,6 @@ export default function DrawerContent({ navigation }) {
 
         {/* Long Leave Workers section removed */}
 
-        {/* Testing Mode */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>TESTING MODE</Text>
-          <View style={styles.testModeRow}>
-            <Text style={styles.testModeLabel}>🧪 Manual Date Mode</Text>
-            <Switch
-              value={testMode}
-              onValueChange={setTestMode}
-              trackColor={{ false: COLORS.border, true: COLORS.primary }}
-              thumbColor={testMode ? '#fff' : '#f4f3f4'}
-            />
-          </View>
-          {testMode && (
-            <View style={styles.dateNavRow}>
-              <TouchableOpacity style={styles.dateNavBtn} onPress={() => changeTestDate(-1)}>
-                <Text style={styles.dateNavArrow}>‹</Text>
-              </TouchableOpacity>
-              <Text style={styles.dateNavText}>
-                {testDate ? new Date(testDate + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
-              </Text>
-              <TouchableOpacity style={styles.dateNavBtn} onPress={() => changeTestDate(1)}>
-                <Text style={styles.dateNavArrow}>›</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-          {testMode && <Text style={styles.holdHint}>Date used for marking attendance</Text>}
-        </View>
-
         {/* Bottom Nav */}
         <View style={[styles.section, { marginTop: 'auto' }]}>
           <TouchableOpacity style={styles.navItem} onPress={() => { navigation.closeDrawer(); navigation.navigate('HiddenWorkers'); }}>
@@ -154,12 +126,6 @@ const styles = StyleSheet.create({
   statusPill: { backgroundColor: '#FFEAEE', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   statusPillText: { fontSize: 11, color: COLORS.red, fontWeight: '600' },
   holdHint: { fontSize: 11, color: COLORS.textSecondary, fontStyle: 'italic', paddingHorizontal: 16, paddingBottom: 6 },
-  testModeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10 },
-  testModeLabel: { fontSize: 15, color: COLORS.textPrimary, fontWeight: '500' },
-  dateNavRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, gap: 16 },
-  dateNavBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center' },
-  dateNavArrow: { color: '#fff', fontSize: 22, fontWeight: '700', lineHeight: 26 },
-  dateNavText: { fontSize: 14, fontWeight: '600', color: COLORS.textPrimary, minWidth: 120, textAlign: 'center' },
   hiddenSheet: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 30 },
   sheetHandle: { width: 40, height: 4, backgroundColor: COLORS.border, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 8 },
   sheetTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textPrimary, paddingHorizontal: 20, marginBottom: 2 },

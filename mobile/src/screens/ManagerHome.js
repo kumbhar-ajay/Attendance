@@ -33,11 +33,9 @@ const Avatar = ({ name, photoUrl, size = 42 }) => {
 
 export default function ManagerHome({ navigation }) {
   const insets = useSafeAreaInsets();
-  const { user, testMode, testDate, viewingManager, clearViewingManager } = useStore();
-  const workDate = (testMode && testDate) ? testDate : todayStr;
-  const dateLabel = testMode && testDate
-    ? new Date(testDate + 'T12:00:00').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-    : todayDateLabel;
+  const { user, viewingManager, clearViewingManager } = useStore();
+  const workDate = todayStr;
+  const dateLabel = todayDateLabel;
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -68,7 +66,7 @@ export default function ManagerHome({ navigation }) {
 
   // Re-fetch every time this screen comes into focus (e.g. after adding a worker)
   useFocusEffect(
-    useCallback(() => { fetchData(workDate); }, [testMode, testDate])
+    useCallback(() => { fetchData(workDate); }, [])
   );
 
   const fetchData = async (date) => {
@@ -358,22 +356,6 @@ export default function ManagerHome({ navigation }) {
           <Text style={styles.viewingBannerText}>👤 Viewing: {viewingManager.name}'s workers</Text>
           <TouchableOpacity onPress={() => { clearViewingManager(); navigation.navigate('AdminHome'); }}>
             <Text style={styles.viewingBannerBack}>← Back to Admin</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Test Mode Banner */}
-      {testMode && (
-        <View style={styles.testBanner}>
-          <Text style={styles.testBannerText}>🧪 Test Mode — {workDate}</Text>
-          <TouchableOpacity onPress={async () => {
-            try {
-              const res = await fillAbsent(workDate);
-              Toast.show({ type: 'success', text1: res.data.message });
-              fetchData(workDate);
-            } catch (e) { Toast.show({ type: 'error', text1: 'Fill absent failed' }); }
-          }}>
-            <Text style={styles.testBannerBtn}>Fill Absent</Text>
           </TouchableOpacity>
         </View>
       )}

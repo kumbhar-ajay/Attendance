@@ -14,8 +14,8 @@ const fmtDate = (d) => new Date(d + 'T12:00:00').toLocaleDateString('en-IN', { d
 
 export default function WorkerHome({ navigation }) {
   const insets = useSafeAreaInsets();
-  const { user, logout, testMode, testDate, setTestMode, changeTestDate } = useStore();
-  const workDate = (testMode && testDate) ? testDate : localDateStr();
+  const { user, logout } = useStore();
+  const workDate = localDateStr();
   const [month, setMonth] = useState(currMonth(workDate));
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -133,7 +133,7 @@ export default function WorkerHome({ navigation }) {
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>{ROLE_LABELS[user?.role]} — {user?.name}</Text>
-          <Text style={styles.headerDate}>{new Date(workDate + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })}{testMode ? ' 🧪' : ''}</Text>
+          <Text style={styles.headerDate}>{new Date(workDate + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })}</Text>
         </View>
         <TouchableOpacity onPress={() => setShowPassModal(true)} style={{ marginRight: 12 }}>
           <Text style={{ color: '#fff', fontSize: 13 }}>⚙️</Text>
@@ -154,13 +154,13 @@ export default function WorkerHome({ navigation }) {
             <Text style={[styles.todayValue, { color: attColor }]}>
               {todayAttVal ? (ATT_MAP[todayAttVal]?.display || todayAttVal) : '—'}
             </Text>
-            <Text style={styles.todayDate}>{new Date(workDate + 'T12:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}{testMode ? ' 🧪' : ''}</Text>
+            <Text style={styles.todayDate}>{new Date(workDate + 'T12:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}</Text>
             {!todayAttVal && <Text style={styles.notMarked}>Not marked yet</Text>}
           </View>
 
           {/* Travel Input */}
           <View style={styles.travelCard}>
-            <Text style={styles.travelLabel}>{testMode ? 'Travel Expense (Test Date) 🧪' : "Today's Travel Expense"}</Text>
+            <Text style={styles.travelLabel}>Today's Travel Expense</Text>
             <View style={styles.travelRow}>
               <Text style={styles.travelPrefix}>₹</Text>
               <TextInput style={styles.travelInput} placeholder="0" keyboardType="numeric" value={travel} onChangeText={setTravel} />
@@ -192,20 +192,7 @@ export default function WorkerHome({ navigation }) {
             </View>
           </View>
 
-          {/* Test Mode */}
-          <View style={styles.testModeCard}>
-            <View style={styles.testModeRow}>
-              <Text style={styles.testModeLabel}>🧪 Manual Date Mode</Text>
-              <Switch value={testMode} onValueChange={setTestMode} trackColor={{ false: COLORS.border, true: COLORS.primary }} thumbColor={testMode ? '#fff' : '#f4f3f4'} />
-            </View>
-            {testMode && (
-              <View style={styles.dateNavRow}>
-                <TouchableOpacity style={styles.dateNavBtn} onPress={() => changeTestDate(-1)}><Text style={styles.dateNavArrow}>‹</Text></TouchableOpacity>
-                <Text style={styles.dateNavText}>{workDate}</Text>
-                <TouchableOpacity style={styles.dateNavBtn} onPress={() => changeTestDate(1)}><Text style={styles.dateNavArrow}>›</Text></TouchableOpacity>
-              </View>
-            )}
-          </View>
+
 
           {/* Month Nav */}
           <View style={styles.monthNav}>
@@ -351,11 +338,4 @@ const styles = StyleSheet.create({
   passModal: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24 },
   passLabel: { fontSize: 13, fontWeight: '600', color: COLORS.textPrimary, marginBottom: 6 },
   passInput: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 12, fontSize: 15, marginBottom: 12 },
-  testModeCard: { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: COLORS.border },
-  testModeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  testModeLabel: { fontSize: 14, color: COLORS.textPrimary, fontWeight: '600' },
-  dateNavRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10, gap: 16 },
-  dateNavBtn: { padding: 6 },
-  dateNavArrow: { fontSize: 26, color: COLORS.primary, fontWeight: '700' },
-  dateNavText: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary, minWidth: 100, textAlign: 'center' },
 });

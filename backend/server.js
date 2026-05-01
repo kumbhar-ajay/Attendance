@@ -146,6 +146,13 @@ app.post('/api/upload/photo', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
+
+//---- ajay added this uptime endpoint for monitoring ----
+// Add this route — simple ping endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', time: new Date().toISOString() });
+});
+
 // ─────────────── ADMIN ROUTES ───────────────
 app.get('/api/admin/managers', auth, role('admin'), async (req, res) => {
   try {
