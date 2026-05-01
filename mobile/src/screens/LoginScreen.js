@@ -42,7 +42,7 @@ export default function LoginScreen({ navigation }) {
             <Text style={styles.logoText}>A</Text>
           </View>
           <Text style={styles.appName}>Attendance Pro</Text>
-          <Text style={styles.appSub}>Civil Work Manager</Text>
+          <Text style={styles.appSub}>RK Constructions</Text>
         </View>
         <View style={styles.form}>
           <Text style={styles.label}>Mobile Number</Text>
