@@ -27,6 +27,7 @@ export default function AdminHome({ navigation }) {
   const [selectedMgr, setSelectedMgr] = useState(null);
   const [showMgrMenu, setShowMgrMenu] = useState(false);
   const [newPass, setNewPass] = useState('');
+  const [showNewPass, setShowNewPass] = useState(false);
   const [showPassInput, setShowPassInput] = useState(false);
   const [showRateInput, setShowRateInput] = useState(false);
   const [newRate, setNewRate] = useState('');
@@ -192,12 +193,14 @@ export default function AdminHome({ navigation }) {
         <ScrollView horizontal>
           <View style={styles.table}>
             <View style={[styles.tableRow, styles.tableHead]}>
-              {['Name','Role','Days','Rate','Earned','Adv.','Travel','Balance'].map(h => (
-                <Text key={h} style={[styles.cell, styles.headCell]}>{h}</Text>
+              {['S.No','Name','Role','Days','Rate','Earned','Adv.','Travel','Balance'].map(h => (
+                <Text key={h} style={[styles.cell, styles.headCell, h === 'S.No' && styles.snCell]}>{h}</Text>
               ))}
             </View>
             {report.map((r, i) => (
-              <View key={i} style={[styles.tableRow, i%2===0 && {backgroundColor:'#F9F9F9'}]}>
+              <TouchableOpacity key={i} style={[styles.tableRow, i%2===0 && {backgroundColor:'#F9F9F9'}]}
+                onPress={() => navigation.navigate('MonthHistory', { worker: { _id: r._id, name: r.name, role: r.role }, editMode: true, initialMonth: month })}>
+                <Text style={[styles.cell, styles.snCell]}>{i + 1}</Text>
                 <Text style={styles.cell}>{r.name}</Text>
                 <Text style={styles.cell}>{r.role}</Text>
                 <Text style={styles.cell}>{r.totalDays}</Text>
@@ -206,7 +209,7 @@ export default function AdminHome({ navigation }) {
                 <Text style={styles.cell}>₹{r.totalAdvance}</Text>
                 <Text style={styles.cell}>₹{r.totalTravel}</Text>
                 <Text style={[styles.cell, { color: r.balance >= 0 ? COLORS.green : COLORS.red, fontWeight: '700' }]}>₹{r.balance?.toFixed(0)}</Text>
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         </ScrollView>
@@ -240,7 +243,7 @@ export default function AdminHome({ navigation }) {
           <TouchableOpacity style={styles.menuItem} onPress={openRateModal}>
             <Text style={styles.menuItemText}>💰 Change Rate</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMgrMenu(false); setShowPassInput(true); }}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMgrMenu(false); setShowPassInput(true); setShowNewPass(false); }}>
             <Text style={styles.menuItemText}>🔑 Change Password</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem} onPress={() => {
@@ -269,9 +272,20 @@ export default function AdminHome({ navigation }) {
         <View style={styles.overlay}>
           <View style={styles.alertBox}>
             <Text style={styles.sheetTitle}>Change Password for {selectedMgr?.name}</Text>
-            <TextInput style={styles.input} placeholder="New Password" secureTextEntry value={newPass} onChangeText={setNewPass} />
+            <View style={styles.passwordInputRow}>
+              <TextInput
+                style={[styles.input, styles.passwordInput]}
+                placeholder="New Password"
+                secureTextEntry={!showNewPass}
+                value={newPass}
+                onChangeText={setNewPass}
+              />
+              <TouchableOpacity style={styles.passwordToggleBtn} onPress={() => setShowNewPass(v => !v)}>
+                <Text style={styles.passwordToggleText}>{showNewPass ? 'Hide' : 'Show'}</Text>
+              </TouchableOpacity>
+            </View>
             <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity style={[styles.submitBtn, { flex: 1, backgroundColor: COLORS.border }]} onPress={() => setShowPassInput(false)}>
+              <TouchableOpacity style={[styles.submitBtn, { flex: 1, backgroundColor: COLORS.border }]} onPress={() => { setShowPassInput(false); setShowNewPass(false); setNewPass(''); }}>
                 <Text style={{ color: COLORS.textPrimary, fontWeight: '600', textAlign: 'center' }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.submitBtn, { flex: 1 }]} onPress={handleChangePass}>
@@ -344,6 +358,7 @@ const styles = StyleSheet.create({
   tableRow: { flexDirection: 'row' },
   tableHead: { backgroundColor: COLORS.bg },
   cell: { width: 90, paddingHorizontal: 8, paddingVertical: 10, fontSize: 12, color: COLORS.textPrimary, borderRightWidth: 0.5, borderRightColor: COLORS.border },
+  snCell: { width: 46, textAlign: 'center' },
   headCell: { fontWeight: '700', color: COLORS.textSecondary, fontSize: 11 },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
   modalBackdrop: { ...StyleSheet.absoluteFillObject },
@@ -356,6 +371,10 @@ const styles = StyleSheet.create({
   menuItem: { paddingVertical: 14, borderTopWidth: 1, borderTopColor: COLORS.border },
   menuItemText: { fontSize: 16, color: COLORS.textPrimary },
   alertBox: { backgroundColor: '#fff', borderRadius: 16, padding: 24, margin: 24 },
+  passwordInputRow: { position: 'relative', marginBottom: 12 },
+  passwordInput: { marginBottom: 0, paddingRight: 70 },
+  passwordToggleBtn: { position: 'absolute', right: 8, top: 7, paddingHorizontal: 10, paddingVertical: 8 },
+  passwordToggleText: { color: COLORS.primary, fontWeight: '700', fontSize: 13 },
   rateChoiceRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
   rateChoiceBtn: { flex: 1, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 10 },
   rateChoiceBtnActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },

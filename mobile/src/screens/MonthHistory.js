@@ -12,10 +12,10 @@ const fmtDate = (d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric',
 
 export default function MonthHistory({ navigation, route }) {
   const insets = useSafeAreaInsets();
-  const { worker, editMode } = route.params || {};
+  const { worker, editMode, initialMonth } = route.params || {};
   const { testMode, testDate, user } = useStore();
   const effectiveToday = testMode && testDate ? new Date(testDate + 'T12:00:00') : new Date();
-  const [month, setMonth] = useState(currMonth(testMode && testDate ? testDate : null));
+  const [month, setMonth] = useState(initialMonth || currMonth(testMode && testDate ? testDate : null));
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editRow, setEditRow] = useState(null);
@@ -128,7 +128,7 @@ export default function MonthHistory({ navigation, route }) {
       {loading ? (
         <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 40 }} />
       ) : (
-        <ScrollView contentContainerStyle={{ padding: 16 }}>
+        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 90 }}>
           {/* Summary Cards */}
           {data && (
             <>

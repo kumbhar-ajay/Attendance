@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "8a170e5b-2e3b-4902-a807-55dc8c7627ed"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.kumbharajay213.attendancemainfinal",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    }
+  }
+}
